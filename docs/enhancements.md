@@ -52,10 +52,11 @@ state on reset, pause, save-state load, controller disconnect, and teardown.
 - Surface active add-ons and their capabilities in the launch/session state.
 - Block incompatible RetroAchievements Hardcore sessions before emulation starts.
 
-The current implementation provides manifest parsing, validation, and exact
-identity matching, plus a session/lifecycle contract. Runtime capability
-execution and package import are deliberately separate follow-up work so each
-backend can be reviewed safely.
+The current implementation provides manifest parsing, validation, exact
+identity matching, package import, temporary ROM patching, runtime Action
+Replay, guarded runtime overlays, and a session/lifecycle contract. Native
+capabilities remain explicit bridges selected by the active session rather
+than game-specific branches in the emulator.
 
 An active session is created only from manifests that match the current ROM.
 Enabling an unknown or mismatched add-on is rejected before emulation starts.

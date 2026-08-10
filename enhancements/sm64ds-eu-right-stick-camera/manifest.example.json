@@ -21,6 +21,12 @@
   "runtimeSensitivity": 1.0,
   "patches": [
     {
+      "type": "ACTION_REPLAY",
+      "file": "patches/slot2-analog.ards",
+      "apply": "RUNTIME",
+      "provenance": "European ASMP Slot-2 analog runtime code ported from the documented AM64DS patch; validate against the supported revision before packaging"
+    },
+    {
       "type": "RUNTIME_OVERLAY",
       "file": "patches/camera.overlay",
       "apply": "RUNTIME",
