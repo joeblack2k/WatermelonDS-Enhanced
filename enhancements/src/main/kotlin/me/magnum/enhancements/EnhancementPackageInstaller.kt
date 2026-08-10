@@ -3,6 +3,7 @@ package me.magnum.enhancements
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.zip.ZipInputStream
@@ -20,11 +21,15 @@ class EnhancementPackageInstaller(
             val manifest = EnhancementManifestParser.parse(manifestFile.readText())
             val packageDirectory = File(root, manifest.id)
             require(!packageDirectory.exists()) { "Enhancement is already installed" }
-            Files.move(
-                staging.toPath(),
-                packageDirectory.toPath(),
-                StandardCopyOption.ATOMIC_MOVE,
-            )
+            try {
+                Files.move(
+                    staging.toPath(),
+                    packageDirectory.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(staging.toPath(), packageDirectory.toPath())
+            }
             return manifest
         } catch (error: Throwable) {
             staging.deleteRecursively()
@@ -39,7 +44,6 @@ class EnhancementPackageInstaller(
             while (true) {
                 val entry = zip.nextEntry ?: break
                 require(++entries <= MAX_ENTRIES) { "Enhancement package has too many files" }
-                require(!entry.isDirectory) { "Enhancement package contains a directory entry" }
                 require(entry.compressedSize < MAX_ENTRY_BYTES || entry.compressedSize < 0) {
                     "Enhancement package entry is too large"
                 }
@@ -48,6 +52,12 @@ class EnhancementPackageInstaller(
                 val destination = File(staging, relativePath)
                 require(destination.toPath().normalize().startsWith(staging.toPath())) {
                     "Enhancement package escapes its staging directory"
+                }
+                if (entry.isDirectory) {
+                    require(destination.mkdirs() || destination.isDirectory) {
+                        "Unable to create enhancement package directory"
+                    }
+                    continue
                 }
                 destination.parentFile?.mkdirs()
                 destination.outputStream().use { output ->
