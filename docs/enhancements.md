@@ -52,5 +52,11 @@ state on reset, pause, save-state load, controller disconnect, and teardown.
 - Block incompatible RetroAchievements Hardcore sessions before emulation starts.
 
 The current implementation provides manifest parsing, validation, and exact
-identity matching. Runtime capability execution and package import are
-deliberately separate follow-up work so each backend can be reviewed safely.
+identity matching, plus a session/lifecycle contract. Runtime capability
+execution and package import are deliberately separate follow-up work so each
+backend can be reviewed safely.
+
+An active session is created only from manifests that match the current ROM.
+Enabling an unknown or mismatched add-on is rejected before emulation starts.
+The session exposes the union of its capabilities and whether all active
+add-ons are compatible with RetroAchievements Hardcore mode.

@@ -64,4 +64,26 @@ class EnhancementManifestTest {
         assertEquals(listOf(manifest), catalog.matching(EnhancementRomIdentity("ASMP", null, hash)))
         assertTrue(catalog.matching(EnhancementRomIdentity("ASMP", null, hash.reversed())).isEmpty())
     }
+
+    @Test
+    fun sessionRejectsAnEnhancementThatDoesNotMatch() {
+        val manifest = EnhancementManifest(
+            id = "mario-camera",
+            name = "Mario camera",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", sha256 = setOf(hash)),
+        )
+        val catalog = EnhancementCatalog(listOf(manifest))
+
+        var rejected = false
+        try {
+            catalog.createSession(
+                EnhancementRomIdentity("XXXX", null, hash),
+                setOf("mario-camera"),
+            )
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue(rejected)
+    }
 }
