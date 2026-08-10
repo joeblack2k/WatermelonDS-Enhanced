@@ -19,6 +19,11 @@ class EnhancementPackageInstaller(
             val packageDirectory = File(root, manifest.id)
             require(!packageDirectory.exists()) { "Enhancement is already installed" }
             val packageContents = manifestFile.parentFile ?: staging
+            manifest.patches.forEach { patch ->
+                require(File(packageContents, patch.file).isFile) {
+                    "Missing enhancement patch file: ${patch.file}"
+                }
+            }
             require(packageContents.renameTo(packageDirectory)) {
                 "Unable to install enhancement package"
             }

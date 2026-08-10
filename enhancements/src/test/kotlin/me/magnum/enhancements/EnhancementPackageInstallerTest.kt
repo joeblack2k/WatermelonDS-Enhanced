@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -18,13 +19,43 @@ class EnhancementPackageInstallerTest {
             "id": "test.addon",
             "name": "Test",
             "version": "1.0.0",
-            "match": {"gameCode": "ASMP", "headerChecksum": "12345678"}
+            "match": {"gameCode": "ASMP", "headerChecksum": "12345678"},
+            "patches": [{"type": "IPS", "file": "payload/test.ips"}]
         }""".trimIndent()
 
-        val installed = EnhancementPackageInstaller(root).install(zipOf("bundle/manifest.json" to manifest))
+        val installed = EnhancementPackageInstaller(root).install(
+            zipOf(
+                "bundle/manifest.json" to manifest,
+                "bundle/payload/test.ips" to "patch",
+            ),
+        )
 
         assertEquals("test.addon", installed.id)
         assertTrue(File(root, "test.addon/manifest.json").isFile)
+        assertTrue(File(root, "test.addon/payload/test.ips").isFile)
+    }
+
+    @Test
+    fun rejectsMissingNestedPatchWithoutLeavingInstalledOrStagingFiles() {
+        val root = Files.createTempDirectory("enhancements").toFile()
+        val manifest = """{
+            "id": "test.addon",
+            "name": "Test",
+            "version": "1.0.0",
+            "match": {"gameCode": "ASMP", "headerChecksum": "12345678"},
+            "patches": [{"type": "IPS", "file": "payload/missing.ips"}]
+        }""".trimIndent()
+
+        var rejected = false
+        try {
+            EnhancementPackageInstaller(root).install(zipOf("bundle/manifest.json" to manifest))
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+
+        assertTrue(rejected)
+        assertFalse(File(root, "test.addon").exists())
+        assertEquals(emptyList<String>(), root.list()?.toList().orEmpty())
         root.deleteRecursively()
     }
 
