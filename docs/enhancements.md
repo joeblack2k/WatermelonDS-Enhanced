@@ -62,3 +62,19 @@ An active session is created only from manifests that match the current ROM.
 Enabling an unknown or mismatched add-on is rejected before emulation starts.
 The session exposes the union of its capabilities and whether all active
 add-ons are compatible with RetroAchievements Hardcore mode.
+
+## Private ROM identity tool
+
+For private local use, inspect a regular Nintendo DS ROM with:
+
+```sh
+python3 enhancements/tools/rom_identity.py /private/game.nds
+```
+
+The tool reads only the first `0x200` bytes and the filesystem size. It validates
+the game code, DS unit code, stored header CRC16, declared ROM size, and ARM9
+and ARM7 bounds before emitting exactly `gameCode` and `headerChecksum` as JSON.
+`headerChecksum` is the uppercase eight-digit value
+`(~binascii.crc32(header)) & 0xffffffff`; it is an identity fingerprint, not
+the Nintendo DS header's stored CRC16. It never emits a path, title, SHA, or ROM
+bytes, and does not modify the ROM.
