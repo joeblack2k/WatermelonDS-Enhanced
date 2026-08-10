@@ -24,7 +24,7 @@ class EnhancementPackageInstallerTest {
         val installed = EnhancementPackageInstaller(root).install(zipOf("bundle/manifest.json" to manifest))
 
         assertEquals("test.addon", installed.id)
-        assertTrue(File(root, "test.addon/bundle/manifest.json").isFile)
+        assertTrue(File(root, "test.addon/manifest.json").isFile)
         root.deleteRecursively()
     }
 

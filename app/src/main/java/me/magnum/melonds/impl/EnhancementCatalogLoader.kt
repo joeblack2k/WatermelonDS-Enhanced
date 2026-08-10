@@ -38,4 +38,25 @@ class EnhancementCatalogLoader @Inject constructor(
             .toList()
         return EnhancementCatalog(manifests)
     }
+
+    fun readFiles(manifest: me.magnum.enhancements.EnhancementManifest, paths: Set<String>): Map<String, ByteArray> {
+        val roots = listOfNotNull(
+            File(context.filesDir, "Enhancements"),
+            context.getExternalFilesDir(null)?.let { File(it, "Enhancements") },
+        )
+        val packageRoot = roots.asSequence()
+            .map { File(it, manifest.id) }
+            .firstOrNull { it.isDirectory }
+            ?: error("Installed enhancement package not found: ${manifest.id}")
+        return paths.associateWith { relativePath ->
+            require(!relativePath.startsWith("/") && ".." !in relativePath.split('/')) {
+                "Unsafe enhancement package path"
+            }
+            val file = File(packageRoot, relativePath)
+            require(file.toPath().normalize().startsWith(packageRoot.toPath()) && file.isFile) {
+                "Enhancement package file not found: $relativePath"
+            }
+            file.readBytes()
+        }
+    }
 }

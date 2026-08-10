@@ -128,6 +128,8 @@ import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.domain.services.EmulatorManager
 import me.magnum.melonds.impl.ShaderCompileTimeStore
 import me.magnum.melonds.impl.EnhancementCatalogLoader
+import me.magnum.melonds.impl.EnhancedRomMaterializer
+import me.magnum.melonds.impl.EnhancedCheatLoader
 import me.magnum.melonds.impl.emulator.EmulatorSession
 import me.magnum.melonds.impl.emulator.LeaderboardTrackerUpdateLogLimiter
 import me.magnum.melonds.impl.emulator.debug.RendererDebugCaptureLogger
@@ -264,6 +266,8 @@ class EmulatorViewModel @Inject constructor(
     private val retroAchievementsSubmissionHandler: RetroAchievementsSubmissionHandler,
     private val shaderCompileTimeStore: ShaderCompileTimeStore,
     private val enhancementCatalogLoader: EnhancementCatalogLoader,
+    private val enhancedRomMaterializer: EnhancedRomMaterializer,
+    private val enhancedCheatLoader: EnhancedCheatLoader,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -286,6 +290,7 @@ class EmulatorViewModel @Inject constructor(
     private var raBootstrapJob: Job? = null
     private var raSessionJob: Job? = null
     private var activeEnhancementSession: EnhancementSession? = null
+    private var activeEnhancedRomFile: java.io.File? = null
     private val _activeRuntimeInputProtocol = MutableStateFlow<EnhancementRuntimeInput?>(null)
     val activeRuntimeInputProtocol = _activeRuntimeInputProtocol.asStateFlow()
 
@@ -766,10 +771,19 @@ class EmulatorViewModel @Inject constructor(
                 null
             }
             _activeRuntimeInputProtocol.value = activeEnhancementSession?.runtimeInput
+            activeEnhancedRomFile = activeEnhancementSession?.let {
+                enhancedRomMaterializer.prepare(rom, it)
+            }
+            val materializedRom = activeEnhancedRomFile?.let {
+                rom.copy(
+                    uri = enhancedRomMaterializer.uri(it),
+                    fileName = it.name,
+                )
+            } ?: rom
             val launchRom = if (activeEnhancementSession?.hasCapability(EnhancementCapability.SLOT2_ANALOG) == true) {
-                rom.copy(config = rom.config.copy(gbaSlotConfig = me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.AnalogInput))
+                materializedRom.copy(config = materializedRom.config.copy(gbaSlotConfig = me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.AnalogInput))
             } else {
-                rom
+                materializedRom
             }
             val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(launchRom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
@@ -838,7 +852,8 @@ class EmulatorViewModel @Inject constructor(
                 )
             }
 
-            val cheats = romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()
+            val cheats = (romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()) +
+                (activeEnhancementSession?.let { enhancedCheatLoader.load(it) } ?: emptyList())
             confirmRetroArchShaderCompile(launchRom.config)
             val result = emulatorManager.loadRom(launchRom, cheats)
             when (result) {
@@ -1764,6 +1779,8 @@ class EmulatorViewModel @Inject constructor(
         activeRuntimePath = RetroAchievementsRuntimePath.DISABLED
         activeEnhancementSession?.close()
         activeEnhancementSession = null
+        enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
+        activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null
         emulatorManager.stopEmulator()
         screenshotFrameBufferProvider.clearBuffer()
@@ -2706,6 +2723,8 @@ class EmulatorViewModel @Inject constructor(
         activeRomConfig.value = null
         activeEnhancementSession?.close()
         activeEnhancementSession = null
+        enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
+        activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null
         currentRetroAchievementsGameId = null
         offlineSyncChoiceDeferred?.cancel()

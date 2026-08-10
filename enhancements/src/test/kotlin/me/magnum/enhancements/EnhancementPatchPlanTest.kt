@@ -8,7 +8,10 @@ class EnhancementPatchPlanTest {
     fun appliesOnlyTemporaryCopyPatchesInDeclaredOrder() {
         val plan = EnhancementPatchPlan(
             temporaryCopyPatches = listOf(
-                EnhancementPatch(EnhancementPatchType.IPS, "first.ips", EnhancementPatchApply.TEMPORARY_COPY),
+                EnhancementPatchResource(
+                    "test",
+                    EnhancementPatch(EnhancementPatchType.IPS, "first.ips", EnhancementPatchApply.TEMPORARY_COPY),
+                ),
             ),
             runtimePatches = emptyList(),
         )
@@ -18,6 +21,6 @@ class EnhancementPatchPlanTest {
             *"EOF".encodeToByteArray(),
         )
 
-        assertArrayEquals(byteArrayOf(9), plan.applyTemporaryCopy(ByteArray(1), mapOf("first.ips" to ips)))
+        assertArrayEquals(byteArrayOf(9), plan.applyTemporaryCopy(ByteArray(1), mapOf("test/first.ips" to ips)))
     }
 }

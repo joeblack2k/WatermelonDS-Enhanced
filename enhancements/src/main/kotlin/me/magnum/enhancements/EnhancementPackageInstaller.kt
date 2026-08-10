@@ -21,14 +21,15 @@ class EnhancementPackageInstaller(
             val manifest = EnhancementManifestParser.parse(manifestFile.readText())
             val packageDirectory = File(root, manifest.id)
             require(!packageDirectory.exists()) { "Enhancement is already installed" }
+            val packageContents = manifestFile.parentFile ?: staging
             try {
                 Files.move(
-                    staging.toPath(),
+                    packageContents.toPath(),
                     packageDirectory.toPath(),
                     StandardCopyOption.ATOMIC_MOVE,
                 )
             } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(staging.toPath(), packageDirectory.toPath())
+                Files.move(packageContents.toPath(), packageDirectory.toPath())
             }
             return manifest
         } catch (error: Throwable) {
