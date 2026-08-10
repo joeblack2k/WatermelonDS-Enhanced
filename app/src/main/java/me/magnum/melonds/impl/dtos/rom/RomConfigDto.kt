@@ -42,7 +42,7 @@ data class RomConfigDto(
     @SerializedName("retroAchievementsEnabled")
     val retroAchievementsEnabled: Boolean? = null,
     @SerializedName("enabledEnhancements")
-    val enabledEnhancements: Set<String> = emptySet(),
+    val enabledEnhancements: Set<String>? = null,
 ) {
 
     companion object {
@@ -85,7 +85,7 @@ data class RomConfigDto(
             retroArchShaderPresetPath = retroArchShaderPresetPath,
             retroArchShaderParameters = retroArchShaderParameters,
             retroAchievementsEnabled = retroAchievementsEnabled,
-            enabledEnhancements = enabledEnhancements,
+            enabledEnhancements = enabledEnhancements.orEmpty(),
         )
     }
 }

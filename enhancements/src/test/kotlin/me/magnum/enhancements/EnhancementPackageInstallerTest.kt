@@ -20,7 +20,7 @@ class EnhancementPackageInstallerTest {
             "name": "Test",
             "version": "1.0.0",
             "match": {"gameCode": "ASMP", "headerChecksum": "12345678"},
-            "patches": [{"type": "IPS", "file": "payload/test.ips"}]
+            "patches": [{"type": "IPS", "file": "payload/test.ips", "apply": "TEMPORARY_COPY"}]
         }""".trimIndent()
 
         val installed = EnhancementPackageInstaller(root).install(
@@ -43,7 +43,7 @@ class EnhancementPackageInstallerTest {
             "name": "Test",
             "version": "1.0.0",
             "match": {"gameCode": "ASMP", "headerChecksum": "12345678"},
-            "patches": [{"type": "IPS", "file": "payload/missing.ips"}]
+            "patches": [{"type": "IPS", "file": "payload/missing.ips", "apply": "TEMPORARY_COPY"}]
         }""".trimIndent()
 
         var rejected = false

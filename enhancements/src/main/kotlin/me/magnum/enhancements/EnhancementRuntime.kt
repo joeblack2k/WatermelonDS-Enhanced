@@ -59,8 +59,8 @@ fun EnhancementCatalog.createSession(
     require(selected.flatMap { it.requiresCapabilities }.all { it in selected.flatMap { addOn -> addOn.capabilities } }) {
         "Enabled enhancements have unsatisfied capability requirements"
     }
-    require(selected.mapNotNull { it.runtimeProtocol }.distinct().size <= 1) {
-        "Enabled enhancements declare incompatible runtime protocols"
+    require(selected.count { it.runtimeProtocol != null } <= 1) {
+        "Enabled enhancements cannot declare more than one runtime protocol owner"
     }
     return EnhancementSession(selected)
 }

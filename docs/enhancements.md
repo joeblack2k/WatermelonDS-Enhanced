@@ -49,6 +49,8 @@ state on reset, pause, save-state load, controller disconnect, and teardown.
 - Reject unsafe paths and unknown manifest fields.
 - Keep the original ROM untouched.
 - Validate patch bounds and expected original values before applying runtime code.
+- Runtime Action Replay and overlay patches must use `RUNTIME`; IPS and BPS
+  patches must use `TEMPORARY_COPY`. Other type/apply pairs are rejected.
 - Surface active add-ons and their capabilities in the launch/session state.
 - Block incompatible RetroAchievements Hardcore sessions before emulation starts.
 

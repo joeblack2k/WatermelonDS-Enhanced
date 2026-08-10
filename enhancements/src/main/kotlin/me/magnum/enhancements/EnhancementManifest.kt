@@ -89,6 +89,16 @@ object EnhancementManifestParser {
             require(!it.file.startsWith("/") && ".." !in it.file.split('/')) {
                 "Patch file must stay inside the enhancement package"
             }
+            when (it.type) {
+                EnhancementPatchType.ACTION_REPLAY,
+                EnhancementPatchType.RUNTIME_OVERLAY -> require(it.apply == EnhancementPatchApply.RUNTIME) {
+                    "${it.type} patches must use RUNTIME apply mode"
+                }
+                EnhancementPatchType.IPS,
+                EnhancementPatchType.BPS -> require(it.apply == EnhancementPatchApply.TEMPORARY_COPY) {
+                    "${it.type} patches must use TEMPORARY_COPY apply mode"
+                }
+            }
             if (it.type == EnhancementPatchType.RUNTIME_OVERLAY || it.type == EnhancementPatchType.ACTION_REPLAY) {
                 require(it.provenance.isNotBlank()) { "Runtime patches need provenance" }
                 require(it.expectedOriginalWords.keys.all { address -> address.matches(Regex("0x[0-9a-fA-F]{8}")) }) {
