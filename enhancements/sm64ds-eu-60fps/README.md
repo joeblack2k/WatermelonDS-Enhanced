@@ -24,5 +24,24 @@ Build inputs are supplied outside the repository:
 3. the generated Action Replay or runtime overlay payload;
 4. verifier output covering every hook and payload region.
 
-The generator and verifier should be copied into this addon once their input
-paths and output format are independent of the ThorDS repository.
+The generator and verifier are present in `tools/`. Their tooling test is
+input-free and checks their shared constants, branch encoding, and strict
+five-region parser:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 tools/test_patch_tools.py
+```
+
+The end-to-end tool test remains private and requires legal, revision-matched
+ARM9 and overlay images. It generates only temporary objects and patch output:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 tools/test_patch.py \
+  --arm9-image /private/path/arm9_dec.bin \
+  --overlay2-image /private/path/overlay_0002.bin
+```
+
+This is tooling-only validation. It does not generate or install a payload for
+the addon, and it does not validate a ROM revision without the user's legal
+input images. The current gate is explicit: both image arguments are required
+and must point to existing files; `llvm-mc` must also be available on `PATH`.

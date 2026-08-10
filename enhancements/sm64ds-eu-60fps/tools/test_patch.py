@@ -4,18 +4,16 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-import json
+import shutil
 import subprocess
 import tempfile
 import argparse
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).parent
 BUILD = HERE / "build_patch.py"
 VERIFY = HERE / "verify_patch.py"
-MC = Path("/opt/homebrew/Cellar/llvm/22.1.8/bin/llvm-mc")
-DEFAULT_DECOMP = ROOT / "docs/sm64ds-decomp"
 
 
 def load_verifier():
@@ -57,32 +55,18 @@ def apply_model(lines: list[str], initial_memory: dict[int, int]):
     return applied
 
 
-def runtime_code(catalog):
-    if isinstance(catalog, dict):
-        runtime = catalog.get("runtimeCode")
-        if runtime and runtime.get("id") == "sm64ds.eu.60fps-dev-cadence.v10":
-            return runtime
-        for value in catalog.values():
-            found = runtime_code(value)
-            if found:
-                return found
-    elif isinstance(catalog, list):
-        for value in catalog:
-            found = runtime_code(value)
-            if found:
-                return found
-    return None
-
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--decomp-root", type=Path, default=DEFAULT_DECOMP)
+    parser.add_argument("--arm9-image", type=Path, required=True)
+    parser.add_argument("--overlay2-image", type=Path, required=True)
     args = parser.parse_args()
-    arm9 = args.decomp_root / "extracted/arm9_dec.bin"
-    overlay = args.decomp_root / "extracted/overlays/overlay_0002.bin"
+    arm9 = args.arm9_image
+    overlay = args.overlay2_image
     if not arm9.is_file() or not overlay.is_file():
-        raise SystemExit("missing extracted EU binary; pass --decomp-root")
-    assert MC.exists()
+        raise SystemExit("missing required ARM9 or overlay2 image input")
+    mc = shutil.which("llvm-mc")
+    if mc is None:
+        raise SystemExit("missing prerequisite: llvm-mc (install LLVM and put llvm-mc on PATH)")
     verifier = load_verifier()
     with tempfile.TemporaryDirectory() as temp_dir:
         temp = Path(temp_dir)
@@ -95,10 +79,10 @@ def main():
             objects[name] = temp / f"{name}.o"
             subprocess.run(
                 [
-                    str(MC),
+                    mc,
                     "-triple=armv5-none-eabi",
                     "-filetype=obj",
-                    str(HERE / source),
+                    str(source),
                     "-o",
                     str(objects[name]),
                 ],
@@ -107,7 +91,7 @@ def main():
 
         output = temp / "patch.txt"
         command = [
-            "python3",
+            sys.executable,
             str(BUILD),
             "--arm9-image",
             str(arm9),
@@ -137,15 +121,6 @@ def main():
         lines = output.read_text(encoding="ascii").splitlines()
         regions = verifier.parse(output)
         assert len(regions) == 5
-
-        catalog = json.loads(
-            (ROOT / "app/src/main/assets/enhancement-profiles.json").read_text()
-        )
-        runtime = runtime_code(catalog)
-        assert runtime is not None
-        assert runtime["codeWords"] == lines
-        canonical = ("\n".join(lines) + "\n").encode("ascii")
-        assert runtime["codeSha256"] == hashlib.sha256(canonical).hexdigest()
 
         for region_index, (guards, expected_writes) in enumerate(regions):
             memory = dict(guards)
