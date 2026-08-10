@@ -38,6 +38,13 @@ must exactly equal the manifest `id`. Discovery checks only direct, visible
 package directories under each configured root; nested manifests and
 dot-prefixed staging directories are ignored.
 
+Import rejects an already installed `id` by default. App-managed imports may
+explicitly opt into replacement; the incoming package is extracted and fully
+validated first, then promoted in the same root. The previous package is kept
+as a hidden temporary backup until promotion succeeds and is restored if
+promotion fails. Staging and backup directories are removed before the import
+returns.
+
 The manifest is deliberately broader than an Action Replay file. An add-on
 may combine controller-axis ownership, a native emulator capability, a
 versioned runtime input protocol, guarded runtime code, or an IPS/BPS patch

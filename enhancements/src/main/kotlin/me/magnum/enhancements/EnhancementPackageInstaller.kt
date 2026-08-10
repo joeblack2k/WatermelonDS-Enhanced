@@ -8,8 +8,9 @@ import java.util.zip.ZipInputStream
 
 class EnhancementPackageInstaller(
     private val root: File,
+    private val rename: (File, File) -> Boolean = File::renameTo,
 ) {
-    fun install(input: InputStream): EnhancementManifest {
+    fun install(input: InputStream, replace: Boolean = false): EnhancementManifest {
         root.mkdirs()
         val staging = File(root, ".installing-${UUID.randomUUID()}")
         staging.mkdirs()
@@ -18,16 +19,44 @@ class EnhancementPackageInstaller(
             val manifestFile = findManifest(staging)
             val manifest = EnhancementManifestParser.parse(manifestFile.readText())
             val packageDirectory = File(root, manifest.id)
-            require(!packageDirectory.exists()) { "Enhancement is already installed" }
+            require(replace || !packageDirectory.exists()) { "Enhancement is already installed" }
             val packageContents = manifestFile.parentFile ?: staging
             manifest.patches.forEach { patch ->
-                require(File(packageContents, patch.file).isFile) {
+                val patchFile = File(packageContents, patch.file)
+                require(patchFile.isFile) {
                     "Missing enhancement patch file: ${patch.file}"
                 }
+                when (patch.type) {
+                    EnhancementPatchType.ACTION_REPLAY -> ActionReplayParser.parse(patchFile.readText())
+                    EnhancementPatchType.RUNTIME_OVERLAY ->
+                        EnhancementOverlayParser.parse(patchFile.readText(), patch.expectedOriginalWords)
+                    EnhancementPatchType.IPS,
+                    EnhancementPatchType.BPS -> Unit
+                }
             }
-            require(packageContents.renameTo(packageDirectory)) {
-                "Unable to install enhancement package"
+            val backupDirectory = if (replace && packageDirectory.exists()) {
+                File(root, ".backup-${UUID.randomUUID()}").also {
+                    require(rename(packageDirectory, it)) {
+                        "Unable to prepare enhancement replacement"
+                    }
+                }
+            } else {
+                null
             }
+            try {
+                require(rename(packageContents, packageDirectory)) {
+                    "Unable to install enhancement package"
+                }
+            } catch (error: Throwable) {
+                backupDirectory?.let {
+                    require(rename(it, packageDirectory)) {
+                        "Unable to restore previous enhancement package"
+                    }
+                    it.deleteRecursively()
+                }
+                throw error
+            }
+            backupDirectory?.deleteRecursively()
             staging.deleteRecursively()
             return manifest
         } catch (error: Throwable) {

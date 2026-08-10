@@ -1,6 +1,7 @@
 package me.magnum.enhancements
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class EnhancementManifestValidationTest {
@@ -29,6 +30,30 @@ class EnhancementManifestValidationTest {
                 throw AssertionError("Expected ${type}/${apply} to be rejected")
             } catch (error: IllegalArgumentException) {
                 assertTrue(error.message.orEmpty().contains(type.name))
+            }
+        }
+    }
+
+    @Test
+    fun rejectsMalformedRomIdentity() {
+        listOf(
+            EnhancementMatch("asmP", "12345678"),
+            EnhancementMatch("ASM", "12345678"),
+            EnhancementMatch("ASM!", "12345678"),
+            EnhancementMatch("ASMP", "1234567"),
+            EnhancementMatch("ASMP", "1234567G"),
+        ).forEach { match ->
+            try {
+                EnhancementManifest(
+                    id = "test.addon",
+                    name = "Test",
+                    version = "1.0.0",
+                    match = match,
+                ).also(EnhancementManifestParser::validate)
+                fail("Expected malformed identity to be rejected: $match")
+            } catch (error: IllegalArgumentException) {
+                assertTrue(error.message.orEmpty().contains("Game code") ||
+                    error.message.orEmpty().contains("checksum"))
             }
         }
     }

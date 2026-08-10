@@ -128,6 +128,7 @@ import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.domain.services.EmulatorManager
 import me.magnum.melonds.impl.ShaderCompileTimeStore
 import me.magnum.melonds.impl.EnhancementCatalogLoader
+import me.magnum.melonds.impl.EnhancementRomIdentityResolver
 import me.magnum.melonds.impl.EnhancedRomMaterializer
 import me.magnum.melonds.impl.EnhancedCheatLoader
 import me.magnum.melonds.impl.EnhancedOverlayLoader
@@ -181,7 +182,6 @@ import me.magnum.melonds.impl.retroachievements.offline.SmartSyncSkipReason
 import me.magnum.melonds.impl.retroachievements.offline.SmartSyncEngine
 import me.magnum.melonds.impl.layout.UILayoutProvider
 import me.magnum.melonds.impl.system.NetworkStatusProvider
-import me.magnum.enhancements.EnhancementRomIdentity
 import me.magnum.enhancements.EnhancementSession
 import me.magnum.enhancements.EnhancementCapability
 import me.magnum.enhancements.createSession
@@ -267,6 +267,7 @@ class EmulatorViewModel @Inject constructor(
     private val retroAchievementsSubmissionHandler: RetroAchievementsSubmissionHandler,
     private val shaderCompileTimeStore: ShaderCompileTimeStore,
     private val enhancementCatalogLoader: EnhancementCatalogLoader,
+    private val enhancementRomIdentityResolver: EnhancementRomIdentityResolver,
     private val enhancedRomMaterializer: EnhancedRomMaterializer,
     private val enhancedCheatLoader: EnhancedCheatLoader,
     private val enhancedOverlayLoader: EnhancedOverlayLoader,
@@ -757,15 +758,18 @@ class EmulatorViewModel @Inject constructor(
             currentRom = rom
             activeRomConfig.value = rom
             val romInfo = getRomInfo(rom)
-            activeEnhancementSession = romInfo?.let {
-                enhancementCatalogLoader.load().createSession(
-                    identity = EnhancementRomIdentity(
-                        gameCode = it.gameCode,
-                        headerChecksum = it.headerChecksumString(),
-                        sha256 = "",
-                    ),
-                    enabledIds = rom.config.enabledEnhancements,
-                )
+            val catalog = enhancementCatalogLoader.load()
+            val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
+            activeEnhancementSession = identity?.let {
+                val matchingIds = catalog.matching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
+                val reconciled = rom.config.enabledEnhancements.intersect(matchingIds)
+                if (reconciled != rom.config.enabledEnhancements) {
+                    val config = rom.config.copy(enabledEnhancements = reconciled)
+                    romsRepository.updateRomConfig(rom, config)
+                    currentRom = rom.copy(config = config)
+                    activeRomConfig.value = currentRom
+                }
+                catalog.createSession(identity = it, enabledIds = reconciled)
             } ?: run {
                 require(rom.config.enabledEnhancements.isEmpty()) {
                     "Enhanced add-ons require a readable ROM header"

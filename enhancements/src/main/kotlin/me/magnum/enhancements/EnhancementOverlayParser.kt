@@ -25,6 +25,11 @@ object EnhancementOverlayParser {
                 EnhancementOverlayWord(address, value, expected)
             }
             .toList()
-            .also { require(it.isNotEmpty()) { "Runtime overlay is empty" } }
+            .also {
+                require(it.isNotEmpty()) { "Runtime overlay is empty" }
+                require(it.map(EnhancementOverlayWord::address).distinct().size == it.size) {
+                    "Runtime overlay contains duplicate write addresses"
+                }
+            }
     }
 }

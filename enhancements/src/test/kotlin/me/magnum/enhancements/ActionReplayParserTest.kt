@@ -1,6 +1,7 @@
 package me.magnum.enhancements
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ActionReplayParserTest {
@@ -16,5 +17,22 @@ class ActionReplayParserTest {
                 """.trimIndent(),
             ),
         )
+    }
+
+    @Test
+    fun rejectsEmptyPayload() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ActionReplayParser.parse("# comments only")
+        }
+    }
+
+    @Test
+    fun rejectsOddWordCounts() {
+        assertThrows(IllegalArgumentException::class.java) {
+            ActionReplayParser.parse("02000000")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ActionReplayParser.parse("02000000 00000001 D0000000")
+        }
     }
 }

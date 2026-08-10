@@ -16,6 +16,15 @@ class EnhancementCatalog(manifests: List<EnhancementManifest>) {
         return manifests.filter { it.matches(identity) }
     }
 
+    fun hasShaGuard(gameCode: String, headerChecksum: String?): Boolean {
+        return manifests.any {
+            it.match.gameCode == gameCode &&
+                (it.match.headerChecksum == null ||
+                    it.match.headerChecksum.equals(headerChecksum, ignoreCase = true)) &&
+                it.match.sha256.isNotEmpty()
+        }
+    }
+
     fun find(id: String): EnhancementManifest? = manifests.firstOrNull { it.id == id }
 
     companion object {

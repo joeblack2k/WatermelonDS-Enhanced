@@ -1,6 +1,7 @@
 package me.magnum.enhancements
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EnhancementOverlayParserTest {
@@ -13,5 +14,15 @@ class EnhancementOverlayParserTest {
 
         assertEquals(0x02000000L, words.single().address)
         assertEquals(0xE1A00000L, words.single().expectedOriginal)
+    }
+
+    @Test
+    fun rejectsDuplicateWriteAddresses() {
+        assertThrows(IllegalArgumentException::class.java) {
+            EnhancementOverlayParser.parse(
+                "02000000 00000001\n0x02000000 0x00000002",
+                mapOf("02000000" to "E1A00000"),
+            )
+        }
     }
 }

@@ -54,6 +54,37 @@ class EnhancementCatalogTest {
         assertTrue(error.message.orEmpty().contains("Duplicate enhancement id"))
     }
 
+    @Test
+    fun matchingUsesGameCodeAndHeaderChecksum() {
+        val catalog = EnhancementCatalog(
+            listOf(
+                EnhancementManifest(
+                    id = "us.addon",
+                    name = "US",
+                    version = "1.0.0",
+                    match = EnhancementMatch("ASMP", "1234ABCD"),
+                ),
+                EnhancementManifest(
+                    id = "other-revision.addon",
+                    name = "Other revision",
+                    version = "1.0.0",
+                    match = EnhancementMatch("ASMP", "87654321"),
+                ),
+                EnhancementManifest(
+                    id = "other-game.addon",
+                    name = "Other game",
+                    version = "1.0.0",
+                    match = EnhancementMatch("BEEE", "1234ABCD"),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("us.addon"),
+            catalog.matching(EnhancementRomIdentity("ASMP", "1234abcd", "")).map { it.id },
+        )
+    }
+
     private fun writeManifest(root: File, id: String, contents: String = manifest(id)) {
         val packageRoot = File(root, id)
         packageRoot.mkdirs()

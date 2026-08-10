@@ -4,12 +4,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.magnum.melonds.common.Permission
+import me.magnum.melonds.common.romprocessors.RomFileProcessorFactory
 import me.magnum.melonds.common.UriPermissionManager
 import me.magnum.melonds.domain.model.VideoFiltering
 import me.magnum.melonds.domain.model.VideoRenderer
@@ -21,6 +24,7 @@ import me.magnum.melonds.domain.repositories.RomsRepository
 import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.impl.RomIconProvider
 import me.magnum.melonds.impl.EnhancementCatalogLoader
+import me.magnum.melonds.impl.EnhancementRomIdentityResolver
 import me.magnum.melonds.parcelables.RomParcelable
 import me.magnum.melonds.ui.romdetails.model.RomConfigUiState
 import me.magnum.melonds.ui.romdetails.model.RomConfigUpdateEvent
@@ -36,6 +40,8 @@ class RomDetailsViewModel @Inject constructor(
     private val romIconProvider: RomIconProvider,
     private val uriPermissionManager: UriPermissionManager,
     private val enhancementCatalogLoader: EnhancementCatalogLoader,
+    private val enhancementRomIdentityResolver: EnhancementRomIdentityResolver,
+    private val romFileProcessorFactory: RomFileProcessorFactory,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -109,7 +115,15 @@ class RomDetailsViewModel @Inject constructor(
                     globalRetroArchShaderParameters = shaderConfig.second,
                     hasValidRetroArchShaderRoot = shaderConfig.third,
                     globalRetroAchievementsEnabled = globalRetroAchievementsEnabled,
-                    availableEnhancementIds = enhancementCatalogLoader.load().manifests.map { it.id },
+                    availableEnhancementIds = withContext(Dispatchers.IO) {
+                        romFileProcessorFactory.getFileRomProcessorForDocument(_rom.value.uri)
+                            .let { processor ->
+                                val catalog = enhancementCatalogLoader.load()
+                                enhancementRomIdentityResolver.resolve(_rom.value, catalog)
+                                    ?.let { catalog.matching(it).map { manifest -> manifest.id } }
+                            }
+                            .orEmpty()
+                    },
                 )
             }.collect {
                 uiStateFlow.value = RomConfigUiState.Ready(it)
