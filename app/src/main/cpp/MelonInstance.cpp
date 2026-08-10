@@ -2845,6 +2845,26 @@ bool MelonInstance::validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) 
     return nds != nullptr && nds->ARM9Read32(address) == expectedWord;
 }
 
+bool MelonInstance::applyEnhancedRuntimeOverlay(
+    const std::vector<u32>& addresses,
+    const std::vector<u32>& expectedWords,
+    const std::vector<u32>& values)
+{
+    if (nds == nullptr || addresses.size() != expectedWords.size() || addresses.size() != values.size()) {
+        return false;
+    }
+    for (std::size_t index = 0; index < addresses.size(); ++index) {
+        const u32 currentWord = nds->ARM9Read32(addresses[index]);
+        if (currentWord != expectedWords[index] && currentWord != values[index]) {
+            return false;
+        }
+    }
+    for (std::size_t index = 0; index < addresses.size(); ++index) {
+        nds->ARM9Write32(addresses[index], values[index]);
+    }
+    return true;
+}
+
 int MelonInstance::readAudioOutput(s16* buffer, int length)
 {
     return nds->SPU.ReadOutput(buffer, length);

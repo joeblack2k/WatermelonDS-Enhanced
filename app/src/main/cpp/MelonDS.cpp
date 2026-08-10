@@ -737,6 +737,14 @@ namespace MelonDSAndroid
         return instance != nullptr && instance->validateEnhancedRuntimeGuard(address, expectedWord);
     }
 
+    bool applyEnhancedRuntimeOverlay(
+        const std::vector<u32>& addresses,
+        const std::vector<u32>& expectedWords,
+        const std::vector<u32>& values)
+    {
+        return instance != nullptr && instance->applyEnhancedRuntimeOverlay(addresses, expectedWords, values);
+    }
+
     void start()
     {
         startAudio();

@@ -196,6 +196,11 @@ object MelonEmulator {
         flags: Short,
     )
     external fun validateEnhancedRuntimeGuard(address: Int, expectedWord: Int): Boolean
+    external fun applyEnhancedRuntimeOverlay(
+        addresses: IntArray,
+        expectedWords: IntArray,
+        values: IntArray,
+    ): Boolean
 
     external fun takeScreenshot(): Boolean
 

@@ -59,6 +59,10 @@ public:
     void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags);
     bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const;
+    bool applyEnhancedRuntimeOverlay(
+        const std::vector<u32>& addresses,
+        const std::vector<u32>& expectedWords,
+        const std::vector<u32>& values);
     int readAudioOutput(s16* buffer, int length);
     void setAudioOutputSkew(double skew);
     bool takeScreenshot();

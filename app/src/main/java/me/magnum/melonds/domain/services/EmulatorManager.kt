@@ -13,6 +13,7 @@ import me.magnum.melonds.domain.model.retroachievements.RaNativePendingRetryResu
 import me.magnum.melonds.domain.model.retroachievements.RARuntimeBridgeConfig
 import me.magnum.melonds.domain.model.rom.Rom
 import me.magnum.enhancements.EnhancementRuntimeGuard
+import me.magnum.enhancements.EnhancementOverlayWord
 import me.magnum.melonds.ui.emulator.rewind.model.RewindSaveState
 import me.magnum.melonds.ui.emulator.rewind.model.RewindWindow
 
@@ -22,6 +23,7 @@ interface EmulatorManager {
 
     suspend fun loadRom(rom: Rom, cheats: List<Cheat>): RomLaunchResult
     fun setEnhancedRuntimeGuards(guards: List<EnhancementRuntimeGuard>)
+    fun setEnhancedRuntimeOverlay(words: List<EnhancementOverlayWord>)
 
     suspend fun loadFirmware(consoleType: ConsoleType): FirmwareLaunchResult
 

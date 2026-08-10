@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import me.magnum.melonds.MelonDSAndroidInterface
 import me.magnum.melonds.MelonEmulator
 import me.magnum.enhancements.EnhancementRuntimeGuard
+import me.magnum.enhancements.EnhancementOverlayWord
 import me.magnum.melonds.common.PermissionHandler
 import me.magnum.melonds.common.romprocessors.RomFileProcessorFactory
 import me.magnum.melonds.common.runtime.ScreenshotFrameBufferProvider
@@ -76,6 +77,7 @@ class AndroidEmulatorManager(
 
     private val _emulatorEvents = MutableSharedFlow<EmulatorEvent>(extraBufferCapacity = Int.MAX_VALUE)
     @Volatile private var enhancedRuntimeGuards: List<EnhancementRuntimeGuard> = emptyList()
+    @Volatile private var enhancedRuntimeOverlay: List<EnhancementOverlayWord> = emptyList()
     override val emulatorEvents: Flow<EmulatorEvent> = _emulatorEvents.asSharedFlow()
 
     private val achievementsSharedFlow = MutableSharedFlow<RAEvent>(replay = 0, extraBufferCapacity = Int.MAX_VALUE)
@@ -352,6 +354,13 @@ class AndroidEmulatorManager(
                         dldiFolderSyncManager.syncBackIfNeeded()
                         return@withContext RomLaunchResult.LaunchFailed(MelonEmulator.LoadResult.NDS_FAILED)
                     }
+                    if (!applyEnhancedRuntimeOverlayIfPresent()) {
+                        cameraManager.stopCurrentCameraSource()
+                        MelonEmulator.stopEmulation()
+                        messageQueue.stop()
+                        dldiFolderSyncManager.syncBackIfNeeded()
+                        return@withContext RomLaunchResult.LaunchFailed(MelonEmulator.LoadResult.NDS_FAILED)
+                    }
                     MelonEmulator.setupCheats(cheats.toTypedArray())
                     MelonEmulator.startEmulation(startPaused = true)
 
@@ -373,6 +382,10 @@ class AndroidEmulatorManager(
 
     override fun setEnhancedRuntimeGuards(guards: List<EnhancementRuntimeGuard>) {
         enhancedRuntimeGuards = guards.toList()
+    }
+
+    override fun setEnhancedRuntimeOverlay(words: List<EnhancementOverlayWord>) {
+        enhancedRuntimeOverlay = words.toList()
     }
 
     private suspend fun loadInstalledDsiWareShortcut(rom: Rom, cheats: List<Cheat>): RomLaunchResult {
@@ -583,6 +596,7 @@ class AndroidEmulatorManager(
 
     override suspend fun resetEmulator() = withContext(Dispatchers.Default) {
         MelonEmulator.resetEmulation()
+        check(applyEnhancedRuntimeOverlayIfPresent()) { "Enhanced runtime overlay could not be reapplied" }
     }
 
     override suspend fun updateCheats(cheats: List<Cheat>) {
@@ -660,7 +674,11 @@ class AndroidEmulatorManager(
     }
 
     override suspend fun loadState(saveStateFileUri: Uri): Boolean = withContext(Dispatchers.IO) {
-        MelonEmulator.loadState(saveStateFileUri)
+        MelonEmulator.loadState(saveStateFileUri).also {
+            if (it) check(applyEnhancedRuntimeOverlayIfPresent()) {
+                "Enhanced runtime overlay could not be reapplied after state load"
+            }
+        }
     }
 
     override suspend fun takeScreenshot(): Boolean = withContext(Dispatchers.IO) {
@@ -673,6 +691,17 @@ class AndroidEmulatorManager(
         dldiFolderSyncManager.syncBackIfNeeded()
         cameraManager.stopCurrentCameraSource()
         messageQueue.stop()
+    }
+
+    private fun applyEnhancedRuntimeOverlayIfPresent(): Boolean {
+        if (enhancedRuntimeOverlay.isEmpty()) {
+            return true
+        }
+        return MelonEmulator.applyEnhancedRuntimeOverlay(
+            enhancedRuntimeOverlay.map { it.address.toInt() }.toIntArray(),
+            enhancedRuntimeOverlay.map { it.expectedOriginal.toInt() }.toIntArray(),
+            enhancedRuntimeOverlay.map { it.value.toInt() }.toIntArray(),
+        )
     }
 
     private fun syncInstalledDsiWareShortcutSaveBackIfNeeded() {

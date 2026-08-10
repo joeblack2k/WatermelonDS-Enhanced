@@ -2439,6 +2439,34 @@ Java_me_magnum_melonds_MelonEmulator_validateEnhancedRuntimeGuard(
         static_cast<u32>(expectedWord));
 }
 
+JNIEXPORT jboolean JNICALL
+Java_me_magnum_melonds_MelonEmulator_applyEnhancedRuntimeOverlay(
+    JNIEnv* env, jobject thiz, jintArray addresses, jintArray expectedWords, jintArray values)
+{
+    (void)thiz;
+    const jsize count = env->GetArrayLength(addresses);
+    if (env->GetArrayLength(expectedWords) != count || env->GetArrayLength(values) != count) {
+        return JNI_FALSE;
+    }
+    std::vector<jint> addressValues(count);
+    std::vector<jint> expectedValues(count);
+    std::vector<jint> overlayValues(count);
+    env->GetIntArrayRegion(addresses, 0, count, addressValues.data());
+    env->GetIntArrayRegion(expectedWords, 0, count, expectedValues.data());
+    env->GetIntArrayRegion(values, 0, count, overlayValues.data());
+    std::vector<u32> nativeAddresses(count);
+    std::vector<u32> nativeExpected(count);
+    std::vector<u32> nativeValues(count);
+    for (jsize index = 0; index < count; ++index) {
+        nativeAddresses[index] = static_cast<u32>(addressValues[index]);
+        nativeExpected[index] = static_cast<u32>(expectedValues[index]);
+        nativeValues[index] = static_cast<u32>(overlayValues[index]);
+    }
+    return MelonDSAndroid::applyEnhancedRuntimeOverlay(nativeAddresses, nativeExpected, nativeValues)
+        ? JNI_TRUE
+        : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL
 Java_me_magnum_melonds_MelonEmulator_setFastForwardEnabled(JNIEnv* env, jobject thiz, jboolean enabled)
 {

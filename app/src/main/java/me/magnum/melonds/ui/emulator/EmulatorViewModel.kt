@@ -130,6 +130,7 @@ import me.magnum.melonds.impl.ShaderCompileTimeStore
 import me.magnum.melonds.impl.EnhancementCatalogLoader
 import me.magnum.melonds.impl.EnhancedRomMaterializer
 import me.magnum.melonds.impl.EnhancedCheatLoader
+import me.magnum.melonds.impl.EnhancedOverlayLoader
 import me.magnum.melonds.impl.emulator.EmulatorSession
 import me.magnum.melonds.impl.emulator.LeaderboardTrackerUpdateLogLimiter
 import me.magnum.melonds.impl.emulator.debug.RendererDebugCaptureLogger
@@ -268,6 +269,7 @@ class EmulatorViewModel @Inject constructor(
     private val enhancementCatalogLoader: EnhancementCatalogLoader,
     private val enhancedRomMaterializer: EnhancedRomMaterializer,
     private val enhancedCheatLoader: EnhancedCheatLoader,
+    private val enhancedOverlayLoader: EnhancedOverlayLoader,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -786,6 +788,9 @@ class EmulatorViewModel @Inject constructor(
                 materializedRom
             }
             emulatorManager.setEnhancedRuntimeGuards(activeEnhancementSession?.runtimeGuards.orEmpty())
+            emulatorManager.setEnhancedRuntimeOverlay(
+                activeEnhancementSession?.let { enhancedOverlayLoader.load(it) }.orEmpty(),
+            )
             val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(launchRom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
                 retroAchievementsEndpointProvider.beginSession()
@@ -1781,6 +1786,7 @@ class EmulatorViewModel @Inject constructor(
         activeEnhancementSession?.close()
         activeEnhancementSession = null
         emulatorManager.setEnhancedRuntimeGuards(emptyList())
+        emulatorManager.setEnhancedRuntimeOverlay(emptyList())
         enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
         activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null
@@ -2726,6 +2732,7 @@ class EmulatorViewModel @Inject constructor(
         activeEnhancementSession?.close()
         activeEnhancementSession = null
         emulatorManager.setEnhancedRuntimeGuards(emptyList())
+        emulatorManager.setEnhancedRuntimeOverlay(emptyList())
         enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
         activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null
