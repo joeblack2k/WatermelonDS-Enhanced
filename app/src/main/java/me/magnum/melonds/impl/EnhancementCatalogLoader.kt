@@ -1,15 +1,27 @@
 package me.magnum.melonds.impl
 
 import android.content.Context
+import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import me.magnum.enhancements.EnhancementCatalog
 import me.magnum.enhancements.EnhancementManifestParser
+import me.magnum.enhancements.EnhancementManifest
+import me.magnum.enhancements.EnhancementPackageInstaller
 import java.io.File
 import javax.inject.Inject
 
 class EnhancementCatalogLoader @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    fun install(packageUri: Uri): EnhancementManifest {
+        val input = requireNotNull(context.contentResolver.openInputStream(packageUri)) {
+            "Unable to open enhancement package"
+        }
+        return input.use {
+            EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).install(it)
+        }
+    }
+
     fun load(): EnhancementCatalog {
         val roots = listOfNotNull(
             File(context.filesDir, "Enhancements"),
