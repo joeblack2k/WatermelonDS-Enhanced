@@ -13,6 +13,7 @@ data class EnhancementManifest(
     val match: EnhancementMatch,
     val capabilities: Set<EnhancementCapability> = emptySet(),
     val patches: List<EnhancementPatch> = emptyList(),
+    val runtimeProtocol: String? = null,
     val hardcoreCompatible: Boolean = false,
 )
 
@@ -36,6 +37,8 @@ data class EnhancementPatch(
     val type: EnhancementPatchType,
     val file: String,
     val apply: EnhancementPatchApply = EnhancementPatchApply.RUNTIME,
+    val provenance: String = "",
+    val expectedOriginalWords: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -76,6 +79,15 @@ object EnhancementManifestParser {
         manifest.patches.forEach {
             require(!it.file.startsWith("/") && ".." !in it.file.split('/')) {
                 "Patch file must stay inside the enhancement package"
+            }
+            if (it.type == EnhancementPatchType.RUNTIME_OVERLAY || it.type == EnhancementPatchType.ACTION_REPLAY) {
+                require(it.provenance.isNotBlank()) { "Runtime patches need provenance" }
+                require(it.expectedOriginalWords.keys.all { address -> address.matches(Regex("0x[0-9a-fA-F]{8}")) }) {
+                    "Invalid guarded patch address"
+                }
+                require(it.expectedOriginalWords.values.all { word -> word.matches(Regex("0x[0-9a-fA-F]{8}")) }) {
+                    "Invalid guarded patch word"
+                }
             }
         }
         if (manifest.capabilities.contains(EnhancementCapability.RUNTIME_INPUT_PROTOCOL)) {

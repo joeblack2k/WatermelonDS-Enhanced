@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "sm64ds.eu.right-stick-camera",
+  "name": "SM64DS EU right-stick camera",
+  "version": "1.0.0",
+  "author": "ThorDS contributors",
+  "match": {
+    "gameCode": "ASMP",
+    "headerChecksum": "TODO_FROM_SUPPORTED_ROM"
+  },
+  "capabilities": [
+    "CONTROLLER_AXIS_OWNER",
+    "RUNTIME_INPUT_PROTOCOL",
+    "RUNTIME_CODE_PATCH"
+  ],
+  "runtimeProtocol": "sm64ds-camera-v1",
+  "patches": [
+    {
+      "type": "RUNTIME_OVERLAY",
+      "file": "runtime/sm64ds_eu_smooth_camera.s",
+      "apply": "RUNTIME",
+      "provenance": "ThorDS smooth-camera source; generated patch is guarded by expected ARM9 words",
+      "expectedOriginalWords": {
+        "0x02009E70": "0xE92D4FF0",
+        "0x0200A7A8": "0xE1C107BC",
+        "0x0200A790": "0x02880C01",
+        "0x0200A79C": "0x01D028F4",
+        "0x0200A7A4": "0x00811002"
+      }
+    }
+  ],
+  "hardcoreCompatible": false
+}
