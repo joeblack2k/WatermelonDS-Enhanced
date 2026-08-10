@@ -20,6 +20,7 @@ data class EnhancementSession(
             }
         }
         .singleOrNull()
+    val patchPlan: EnhancementPatchPlan = createPatchPlan()
 
     fun hasCapability(capability: EnhancementCapability): Boolean {
         return capability in capabilities
