@@ -53,7 +53,8 @@ class EnhancementCatalogLoader @Inject constructor(
                 "Unsafe enhancement package path"
             }
             val file = File(packageRoot, relativePath)
-            require(file.toPath().normalize().startsWith(packageRoot.toPath()) && file.isFile) {
+            val packageRootPath = packageRoot.canonicalPath + File.separator
+            require(file.canonicalPath.startsWith(packageRootPath) && file.isFile) {
                 "Enhancement package file not found: $relativePath"
             }
             file.readBytes()
