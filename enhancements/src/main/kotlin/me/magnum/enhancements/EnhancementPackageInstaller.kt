@@ -2,9 +2,6 @@ package me.magnum.enhancements
 
 import java.io.File
 import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.zip.ZipInputStream
 
@@ -22,14 +19,8 @@ class EnhancementPackageInstaller(
             val packageDirectory = File(root, manifest.id)
             require(!packageDirectory.exists()) { "Enhancement is already installed" }
             val packageContents = manifestFile.parentFile ?: staging
-            try {
-                Files.move(
-                    packageContents.toPath(),
-                    packageDirectory.toPath(),
-                    StandardCopyOption.ATOMIC_MOVE,
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(packageContents.toPath(), packageDirectory.toPath())
+            require(packageContents.renameTo(packageDirectory)) {
+                "Unable to install enhancement package"
             }
             return manifest
         } catch (error: Throwable) {
@@ -51,7 +42,8 @@ class EnhancementPackageInstaller(
                 val relativePath = entry.name.replace('\\', '/')
                 require(isSafeRelativePath(relativePath)) { "Unsafe enhancement package path" }
                 val destination = File(staging, relativePath)
-                require(destination.toPath().normalize().startsWith(staging.toPath())) {
+                val stagingPath = staging.canonicalPath + File.separator
+                require(destination.canonicalPath.startsWith(stagingPath)) {
                     "Enhancement package escapes its staging directory"
                 }
                 if (entry.isDirectory) {
