@@ -26,3 +26,21 @@ Build inputs are supplied outside the repository:
 The evidence and derivation notes remain in the local project research dossier.
 Only generated patch metadata and code that is legal to redistribute belong in
 this addon.
+
+## Capture tooling
+
+The four tools in `tools/` validate user-supplied presenter traces, paired
+surface captures, widescreen geometry/culling, and transition sequences. They
+use only the Python standard library and implement their own PNG decoding.
+Normal runs require explicit manifest and PNG paths; there is no repository or
+local-project evidence directory. `--self-test` is the only input-free mode
+and creates all synthetic inputs in a temporary directory.
+
+Existing ThorDS v1 manifests/traces are accepted only when the corresponding
+explicit legacy-input option is supplied. Reports always use addon-owned
+schemas. Capture inputs are legal user-supplied files kept outside Git; do
+not add captures, generated reports, or fixtures here.
+
+Passing these tools proves only that the supplied captures satisfy the
+measurement checks. It does not prove ROM identity, patch payload correctness,
+runtime behavior, or physical-device behavior.
