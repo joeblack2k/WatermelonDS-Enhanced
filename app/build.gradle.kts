@@ -271,7 +271,7 @@ fun librashaderToolSearchDirs(): List<File> {
         file("/usr/bin"),
         file("/bin"),
     )
-    return (pathDirs + fallbackDirs).distinctBy { it.absolutePath }
+    return (fallbackDirs + pathDirs).distinctBy { it.absolutePath }
 }
 
 fun augmentedLibrashaderPath(): String {
@@ -303,6 +303,18 @@ fun resolveBuildTool(tool: String): String {
             "Android Studio may not inherit your shell PATH; install Rust with rustup or set ${tool.uppercase()} to the executable path."
     }
     return executable.absolutePath
+}
+
+fun resolveRustupTool(tool: String): String {
+    val rustup = resolveBuildTool("rustup")
+    val process = ProcessBuilder(rustup, "which", tool)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+    check(process.waitFor() == 0 && output.isNotBlank()) {
+        "Unable to resolve rustup tool ${tool}: ${output.ifBlank { "no path returned" }}"
+    }
+    return output
 }
 
 fun runBuildCommand(command: List<String>, workingDir: File? = null) {
@@ -480,6 +492,7 @@ val copyLibrashaderAbiArtifacts = librashaderAbiTargets.map { abiTarget ->
         environment("CC_${abiTarget.rustTarget.replace("-", "_")}", clang.absolutePath)
         environment("CXX_${abiTarget.rustTarget.replace("-", "_")}", clangCpp.absolutePath)
         environment("AR_${abiTarget.rustTarget.replace("-", "_")}", llvmAr.absolutePath)
+        environment("RUSTC", resolveRustupTool("rustc"))
         environment("CARGO_TARGET_${targetEnvKey}_LINKER", clang.absolutePath)
         environment("CARGO_TARGET_${targetEnvKey}_RUSTFLAGS", "-C link-arg=-Wl,-soname,liblibrashader.so")
         environment("PATH", augmentedLibrashaderPath())
