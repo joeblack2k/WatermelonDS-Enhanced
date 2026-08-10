@@ -21,6 +21,7 @@ data class RomConfig(
     val retroArchShaderPresetPath: String? = null,
     val retroArchShaderParameters: String? = null,
     val retroAchievementsEnabled: Boolean? = null,
+    val enabledEnhancements: Set<String> = emptySet(),
 ) {
 
     fun getEffectiveControllerConfiguration(globalConfiguration: ControllerConfiguration): ControllerConfiguration {

@@ -3,6 +3,9 @@ package me.magnum.melonds.domain.model.enhancement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import me.magnum.melonds.impl.dtos.rom.RomConfigDto
+import me.magnum.melonds.domain.model.rom.config.RuntimeConsoleType
+import me.magnum.melonds.domain.model.rom.config.RuntimeMicSource
 
 class EnhancementManifestTest {
     private val hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -85,5 +88,19 @@ class EnhancementManifestTest {
             rejected = true
         }
         assertTrue(rejected)
+    }
+
+    @Test
+    fun oldRomConfigDefaultsToNoEnabledEnhancements() {
+        val config = RomConfigDto(
+            runtimeConsoleType = RuntimeConsoleType.DEFAULT,
+            runtimeMicSource = RuntimeMicSource.DEFAULT,
+            layoutId = null,
+            gbaSlotConfig = me.magnum.melonds.impl.dtos.rom.RomGbaSlotConfigDto.fromModel(
+                me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.None,
+            ),
+        ).toModel()
+
+        assertTrue(config.enabledEnhancements.isEmpty())
     }
 }
