@@ -76,6 +76,20 @@ class EnhancementManifestTest {
     }
 
     @Test
+    fun sha256GuardCannotMatchAnotherGameCode() {
+        val manifest = EnhancementManifest(
+            id = "mario-camera",
+            name = "Mario camera",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", sha256 = setOf(hash)),
+        )
+
+        assertTrue(!manifest.matches(EnhancementRomIdentity("XXXX", null, hash)))
+        assertTrue(manifest.matches(EnhancementRomIdentity("ASMP", null, hash)))
+        assertTrue(!manifest.matches(EnhancementRomIdentity("ASMP", null, hash.replaceFirst('0', 'f'))))
+    }
+
+    @Test
     fun sessionRejectsAnEnhancementThatDoesNotMatch() {
         val manifest = EnhancementManifest(
             id = "mario-camera",
@@ -90,6 +104,47 @@ class EnhancementManifestTest {
             catalog.createSession(
                 EnhancementRomIdentity("XXXX", "12345678", ""),
                 setOf("mario-camera"),
+            )
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue(rejected)
+    }
+
+    @Test
+    fun sessionReportsHardcoreIncompatibility() {
+        val manifest = EnhancementManifest(
+            id = "camera",
+            name = "Camera",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+            hardcoreCompatible = false,
+        )
+
+        val session = EnhancementCatalog(listOf(manifest)).createSession(
+            EnhancementRomIdentity("ASMP", "12345678", ""),
+            setOf("camera"),
+        )
+
+        assertTrue(!session.hardcoreCompatible)
+    }
+
+    @Test
+    fun sessionRejectsConflictingAddOns() {
+        val first = EnhancementManifest(
+            id = "first",
+            name = "First",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+            conflictsWith = setOf("second"),
+        )
+        val second = first.copy(id = "second", name = "Second", conflictsWith = emptySet())
+
+        var rejected = false
+        try {
+            EnhancementCatalog(listOf(first, second)).createSession(
+                EnhancementRomIdentity("ASMP", "12345678", ""),
+                setOf("first", "second"),
             )
         } catch (_: IllegalArgumentException) {
             rejected = true

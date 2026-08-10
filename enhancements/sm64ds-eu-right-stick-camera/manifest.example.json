@@ -3,7 +3,7 @@
   "id": "sm64ds.eu.right-stick-camera",
   "name": "SM64DS EU right-stick camera",
   "version": "1.0.0",
-  "author": "ThorDS contributors",
+  "author": "WatermelonDS Enhanced contributors",
   "match": {
     "gameCode": "ASMP",
     "headerChecksum": "TODO_FROM_SUPPORTED_ROM"
@@ -15,6 +15,10 @@
     "SLOT2_ANALOG"
   ],
   "runtimeProtocol": "sm64ds-camera-v1",
+  "runtimeAxisXCode": 12,
+  "runtimeAxisYCode": 13,
+  "runtimeDeadzone": 0.12,
+  "runtimeSensitivity": 1.0,
   "patches": [
     {
       "type": "RUNTIME_OVERLAY",

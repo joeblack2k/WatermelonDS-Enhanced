@@ -10,6 +10,7 @@ import me.magnum.melonds.domain.model.ControllerConfiguration
 import me.magnum.melonds.domain.model.Input
 import me.magnum.melonds.domain.model.InputConfig
 import me.magnum.enhancements.CameraInputProtocol
+import me.magnum.enhancements.EnhancementRuntimeInput
 import java.util.Locale
 import kotlin.math.absoluteValue
 
@@ -17,28 +18,12 @@ class InputProcessor(
     private val controllerConfiguration: ControllerConfiguration,
     private val systemInputListener: IInputListener,
     private val frontendInputListener: IInputListener,
-    private val runtimeProtocol: String? = null,
+    private val runtimeInput: EnhancementRuntimeInput? = null,
 ) : INativeInputListener {
     companion object {
         private const val TAG = "InputProcessor"
         private const val SLOT2_ANALOG_LOG_INTERVAL_MS = 1500L
         private const val SLOT2_RAW_ANALOG_PRIORITY_MS = 150L
-        private val slot2XAxisFallbackCodes = intArrayOf(
-            MotionEvent.AXIS_X,
-            MotionEvent.AXIS_HAT_X,
-            MotionEvent.AXIS_Z,
-            MotionEvent.AXIS_RX,
-            MotionEvent.AXIS_LTRIGGER,
-            MotionEvent.AXIS_RTRIGGER,
-        )
-        private val slot2YAxisFallbackCodes = intArrayOf(
-            MotionEvent.AXIS_Y,
-            MotionEvent.AXIS_HAT_Y,
-            MotionEvent.AXIS_RY,
-            MotionEvent.AXIS_RZ,
-            MotionEvent.AXIS_BRAKE,
-            MotionEvent.AXIS_GAS,
-        )
     }
 
     private val axisStates: Map<Axis, AxisState>
@@ -48,7 +33,14 @@ class InputProcessor(
     private var slot2DigitalRightPressed = false
     private var slot2DigitalUpPressed = false
     private var slot2DigitalDownPressed = false
-    private val cameraProtocol = CameraInputProtocol()
+    private val cameraProtocol = runtimeInput?.let {
+        CameraInputProtocol(
+            deadzone = it.deadzone,
+            yawUnitsPerTick = (850f * it.sensitivity).toInt()
+                .coerceIn(1, Short.MAX_VALUE.toInt())
+                .toShort(),
+        )
+    }
 
     init {
         val axis = controllerConfiguration.inputMapper.flatMap { inputConfig ->
@@ -63,9 +55,9 @@ class InputProcessor(
     }
 
     override fun onKeyEvent(keyEvent: KeyEvent): Boolean {
-        if (runtimeProtocol == "sm64ds-camera-v1" && keyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR) {
+        if (runtimeInput != null && keyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR) {
             if (keyEvent.action == KeyEvent.ACTION_DOWN && keyEvent.repeatCount == 0) {
-                sendCameraState(cameraProtocol.recenter())
+                sendCameraState(requireNotNull(cameraProtocol).recenter())
             }
             return true
         }
@@ -93,14 +85,12 @@ class InputProcessor(
     override fun onMotionEvent(motionEvent: MotionEvent): Boolean {
         if (isControllerMotionEvent(motionEvent)) {
             val slot2Handled = processSlot2AnalogFromMotionEvent(motionEvent)
-            val cameraHandled = if (runtimeProtocol == "sm64ds-camera-v1") {
-                val x = motionEvent.getAxisValue(MotionEvent.AXIS_Z)
-                    .takeIf { it.absoluteValue > 0.001f }
-                    ?: motionEvent.getAxisValue(MotionEvent.AXIS_RX)
-                val y = motionEvent.getAxisValue(MotionEvent.AXIS_RZ)
-                    .takeIf { it.absoluteValue > 0.001f }
-                    ?: motionEvent.getAxisValue(MotionEvent.AXIS_RY)
-                sendCameraState(cameraProtocol.update(x, y))
+            val cameraHandled = if (runtimeInput != null) {
+                val x = motionEvent.getAxisValue(runtimeInput.axisXCode) *
+                    if (runtimeInput.invertX) -1f else 1f
+                val y = motionEvent.getAxisValue(runtimeInput.axisYCode) *
+                    if (runtimeInput.invertY) -1f else 1f
+                sendCameraState(requireNotNull(cameraProtocol).update(x, y))
                 true
             } else {
                 false
@@ -110,7 +100,7 @@ class InputProcessor(
             deviceAxis.forEach {
                 val axis = it.key
                 val axisState = it.value
-                if (cameraHandled && (axis.axisCode == MotionEvent.AXIS_Z || axis.axisCode == MotionEvent.AXIS_RZ)) {
+                if (cameraHandled && (axis.axisCode == runtimeInput?.axisXCode || axis.axisCode == runtimeInput?.axisYCode)) {
                     axisState.value = 0f
                     axisState.active = false
                     return@forEach
@@ -232,16 +222,8 @@ class InputProcessor(
         }
 
         val deadzone = slot2Mapping.normalizedDeadzone()
-        val rawAnalogX = resolveSlot2AxisValue(
-            motionEvent = motionEvent,
-            preferredAxisCode = slot2Mapping.axisXCode,
-            fallbackAxisCodes = slot2XAxisFallbackCodes,
-        ).coerceIn(-1f, 1f)
-        val rawAnalogY = resolveSlot2AxisValue(
-            motionEvent = motionEvent,
-            preferredAxisCode = slot2Mapping.axisYCode,
-            fallbackAxisCodes = slot2YAxisFallbackCodes,
-        ).coerceIn(-1f, 1f)
+        val rawAnalogX = motionEvent.getAxisValue(slot2Mapping.axisXCode).coerceIn(-1f, 1f)
+        val rawAnalogY = motionEvent.getAxisValue(slot2Mapping.axisYCode).coerceIn(-1f, 1f)
         val mappedX = if (slot2Mapping.invertX) -rawAnalogX else rawAnalogX
         val mappedY = if (slot2Mapping.invertY) -rawAnalogY else rawAnalogY
         val analogX = if (mappedX.absoluteValue < deadzone) 0f else mappedX
@@ -259,45 +241,6 @@ class InputProcessor(
             )
         }
         return true
-    }
-
-    private fun resolveSlot2AxisValue(
-        motionEvent: MotionEvent,
-        preferredAxisCode: Int,
-        fallbackAxisCodes: IntArray,
-    ): Float {
-        val preferredValue = motionEvent.getAxisValue(preferredAxisCode)
-        if (deviceSupportsAxis(motionEvent, preferredAxisCode)) {
-            return preferredValue
-        }
-
-        if (preferredValue.absoluteValue > 0.0001f) {
-            return preferredValue
-        }
-
-        var bestAxisValue = preferredValue
-        var bestAxisAbs = preferredValue.absoluteValue
-        fallbackAxisCodes.forEach { axisCode ->
-            if (axisCode == preferredAxisCode) {
-                return@forEach
-            }
-            val axisValue = motionEvent.getAxisValue(axisCode)
-            val axisAbs = axisValue.absoluteValue
-            if (axisAbs > bestAxisAbs) {
-                bestAxisAbs = axisAbs
-                bestAxisValue = axisValue
-            }
-        }
-        return bestAxisValue
-    }
-
-    private fun deviceSupportsAxis(motionEvent: MotionEvent, axisCode: Int): Boolean {
-        val device = motionEvent.device ?: return false
-        return device.getMotionRange(axisCode, motionEvent.source) != null
-            || device.getMotionRange(axisCode, InputDevice.SOURCE_CLASS_JOYSTICK) != null
-            || device.getMotionRange(axisCode, InputDevice.SOURCE_JOYSTICK) != null
-            || device.getMotionRange(axisCode, InputDevice.SOURCE_GAMEPAD) != null
-            || device.getMotionRange(axisCode) != null
     }
 
     private data class Axis(

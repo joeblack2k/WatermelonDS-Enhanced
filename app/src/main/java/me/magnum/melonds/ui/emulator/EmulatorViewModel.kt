@@ -182,6 +182,7 @@ import me.magnum.enhancements.EnhancementRomIdentity
 import me.magnum.enhancements.EnhancementSession
 import me.magnum.enhancements.EnhancementCapability
 import me.magnum.enhancements.createSession
+import me.magnum.enhancements.EnhancementRuntimeInput
 import me.magnum.melonds.ui.emulator.component.RetroAchievementsSubmissionHandler
 import me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption
 import me.magnum.melonds.ui.emulator.model.RumbleEvent
@@ -285,7 +286,7 @@ class EmulatorViewModel @Inject constructor(
     private var raBootstrapJob: Job? = null
     private var raSessionJob: Job? = null
     private var activeEnhancementSession: EnhancementSession? = null
-    private val _activeRuntimeInputProtocol = MutableStateFlow<String?>(null)
+    private val _activeRuntimeInputProtocol = MutableStateFlow<EnhancementRuntimeInput?>(null)
     val activeRuntimeInputProtocol = _activeRuntimeInputProtocol.asStateFlow()
 
     private enum class RetroAchievementsNetworkMode {
@@ -764,9 +765,7 @@ class EmulatorViewModel @Inject constructor(
                 }
                 null
             }
-            _activeRuntimeInputProtocol.value = activeEnhancementSession?.addOns
-                ?.mapNotNull { it.runtimeProtocol }
-                ?.singleOrNull()
+            _activeRuntimeInputProtocol.value = activeEnhancementSession?.runtimeInput
             val launchRom = if (activeEnhancementSession?.hasCapability(EnhancementCapability.SLOT2_ANALOG) == true) {
                 rom.copy(config = rom.config.copy(gbaSlotConfig = me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.AnalogInput))
             } else {
@@ -781,7 +780,11 @@ class EmulatorViewModel @Inject constructor(
             }
             val launchDecision = (if (isRetroAchievementsEnabledForLaunch) {
                 runCatching {
-                    decideRetroAchievementsLaunchDecision(rom, endpointSnapshot)
+                    decideRetroAchievementsLaunchDecision(
+                        rom,
+                        endpointSnapshot,
+                        hardcoreAllowed = activeEnhancementSession?.hardcoreCompatible != false,
+                    )
                 }.getOrElse { throwable ->
                     Log.e("EmulatorViewModel", "RetroAchievements launch decision failed for '${rom.name}'", throwable)
                     RetroAchievementsLaunchDecision(
@@ -900,9 +903,10 @@ class EmulatorViewModel @Inject constructor(
     private suspend fun decideRetroAchievementsLaunchDecision(
         rom: Rom,
         endpointSnapshot: RetroAchievementsEndpointSnapshot,
+        hardcoreAllowed: Boolean = true,
     ): RetroAchievementsLaunchDecision {
         val startedOnline = networkStatusProvider.isOnline()
-        val hardcoreSettingEnabled = settingsRepository.isRetroAchievementsHardcoreEnabled()
+        val hardcoreSettingEnabled = settingsRepository.isRetroAchievementsHardcoreEnabled() && hardcoreAllowed
         val offlineSoftcoreEnabled = settingsRepository.isRetroAchievementsOfflineSoftcoreEnabled()
         val userAuth = retroAchievementsRepository.getUserAuthentication()
 

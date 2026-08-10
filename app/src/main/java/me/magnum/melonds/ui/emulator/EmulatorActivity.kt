@@ -70,6 +70,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.magnum.enhancements.EnhancementRuntimeInput
 import kotlinx.coroutines.withTimeoutOrNull
 import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.R
@@ -2198,8 +2199,8 @@ class EmulatorActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration, runtimeProtocol: String? = null) {
-        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler, runtimeProtocol)
+    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration, runtimeInput: EnhancementRuntimeInput? = null) {
+        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler, runtimeInput)
     }
 
     private fun handleBackPressed() {

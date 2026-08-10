@@ -14,6 +14,14 @@ data class EnhancementManifest(
     val capabilities: Set<EnhancementCapability> = emptySet(),
     val patches: List<EnhancementPatch> = emptyList(),
     val runtimeProtocol: String? = null,
+    val runtimeAxisXCode: Int? = null,
+    val runtimeAxisYCode: Int? = null,
+    val runtimeInvertX: Boolean = false,
+    val runtimeInvertY: Boolean = false,
+    val runtimeDeadzone: Float = 0.12f,
+    val runtimeSensitivity: Float = 1f,
+    val requiresCapabilities: Set<EnhancementCapability> = emptySet(),
+    val conflictsWith: Set<String> = emptySet(),
     val hardcoreCompatible: Boolean = false,
 )
 
@@ -95,9 +103,28 @@ object EnhancementManifestParser {
             require(EnhancementCapability.CONTROLLER_AXIS_OWNER in manifest.capabilities) {
                 "Runtime input protocols must own their controller axes"
             }
+            require(manifest.runtimeProtocol != null) { "Runtime input capability needs a protocol" }
+            require(manifest.runtimeAxisXCode != null && manifest.runtimeAxisYCode != null) {
+                "Runtime input protocols must declare both axis codes"
+            }
+            require(manifest.runtimeDeadzone in 0f..1f) { "Invalid runtime deadzone" }
+            require(manifest.runtimeSensitivity > 0f) { "Invalid runtime sensitivity" }
+        }
+        require(manifest.conflictsWith.none { it == manifest.id }) {
+            "Enhancement cannot conflict with itself"
         }
     }
 }
+
+data class EnhancementRuntimeInput(
+    val protocol: String,
+    val axisXCode: Int,
+    val axisYCode: Int,
+    val invertX: Boolean,
+    val invertY: Boolean,
+    val deadzone: Float,
+    val sensitivity: Float,
+)
 
 data class EnhancementRomIdentity(
     val gameCode: String,
@@ -108,5 +135,5 @@ data class EnhancementRomIdentity(
 fun EnhancementManifest.matches(identity: EnhancementRomIdentity): Boolean {
     return match.gameCode == identity.gameCode &&
         (match.headerChecksum == null || match.headerChecksum.equals(identity.headerChecksum, ignoreCase = true)) &&
-        match.sha256.isEmpty() || identity.sha256.lowercase() in match.sha256.map(String::lowercase)
+        (match.sha256.isEmpty() || identity.sha256.lowercase() in match.sha256.map(String::lowercase))
 }
