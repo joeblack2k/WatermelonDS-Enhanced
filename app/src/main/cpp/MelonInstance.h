@@ -58,6 +58,7 @@ public:
     void setSlot2AnalogInput(float x, float y);
     void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags);
+    bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const;
     int readAudioOutput(s16* buffer, int length);
     void setAudioOutputSkew(double skew);
     bool takeScreenshot();

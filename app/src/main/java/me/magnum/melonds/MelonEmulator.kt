@@ -195,6 +195,7 @@ object MelonEmulator {
         recenterSequence: Short,
         flags: Short,
     )
+    external fun validateEnhancedRuntimeGuard(address: Int, expectedWord: Int): Boolean
 
     external fun takeScreenshot(): Boolean
 

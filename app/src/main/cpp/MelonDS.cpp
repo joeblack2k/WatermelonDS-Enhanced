@@ -732,6 +732,11 @@ namespace MelonDSAndroid
             instance->setSlot2CameraState(yawInputQ12, pitchInputQ12, yawUnitsPerTick, recenterSequence, flags);
     }
 
+    bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord)
+    {
+        return instance != nullptr && instance->validateEnhancedRuntimeGuard(address, expectedWord);
+    }
+
     void start()
     {
         startAudio();

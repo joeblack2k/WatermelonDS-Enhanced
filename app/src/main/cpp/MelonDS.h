@@ -152,6 +152,7 @@ namespace MelonDSAndroid {
     extern void setSlot2AnalogInput(float x, float y);
     extern void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags);
+    extern bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord);
     extern void start();
     extern u32 loop();
     extern Frame* getPresentationFrame(std::optional<std::chrono::time_point<std::chrono::steady_clock>> deadline);

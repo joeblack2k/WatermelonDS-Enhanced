@@ -21,6 +21,19 @@ data class EnhancementSession(
         }
         .singleOrNull()
     val patchPlan: EnhancementPatchPlan = createPatchPlan()
+    val runtimeGuards: List<EnhancementRuntimeGuard> = addOns.flatMap { addOn ->
+        addOn.patches
+            .filter { it.apply == EnhancementPatchApply.RUNTIME }
+            .flatMap { patch ->
+                patch.expectedOriginalWords.map { (address, word) ->
+                    EnhancementRuntimeGuard(
+                        addOnId = addOn.id,
+                        address = address.removePrefix("0x").toLong(16),
+                        expectedWord = word.removePrefix("0x").toLong(16),
+                    )
+                }
+            }
+    }
 
     fun hasCapability(capability: EnhancementCapability): Boolean {
         return capability in capabilities

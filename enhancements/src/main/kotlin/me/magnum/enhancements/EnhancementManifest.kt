@@ -126,6 +126,12 @@ data class EnhancementRuntimeInput(
     val sensitivity: Float,
 )
 
+data class EnhancementRuntimeGuard(
+    val addOnId: String,
+    val address: Long,
+    val expectedWord: Long,
+)
+
 data class EnhancementRomIdentity(
     val gameCode: String,
     val headerChecksum: String?,

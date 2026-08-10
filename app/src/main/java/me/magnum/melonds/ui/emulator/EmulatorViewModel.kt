@@ -785,6 +785,7 @@ class EmulatorViewModel @Inject constructor(
             } else {
                 materializedRom
             }
+            emulatorManager.setEnhancedRuntimeGuards(activeEnhancementSession?.runtimeGuards.orEmpty())
             val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(launchRom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
                 retroAchievementsEndpointProvider.beginSession()
@@ -1779,6 +1780,7 @@ class EmulatorViewModel @Inject constructor(
         activeRuntimePath = RetroAchievementsRuntimePath.DISABLED
         activeEnhancementSession?.close()
         activeEnhancementSession = null
+        emulatorManager.setEnhancedRuntimeGuards(emptyList())
         enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
         activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null
@@ -2723,6 +2725,7 @@ class EmulatorViewModel @Inject constructor(
         activeRomConfig.value = null
         activeEnhancementSession?.close()
         activeEnhancementSession = null
+        emulatorManager.setEnhancedRuntimeGuards(emptyList())
         enhancedRomMaterializer.cleanup(activeEnhancedRomFile)
         activeEnhancedRomFile = null
         _activeRuntimeInputProtocol.value = null

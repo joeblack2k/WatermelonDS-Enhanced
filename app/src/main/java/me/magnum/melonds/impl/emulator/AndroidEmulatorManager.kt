@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import me.magnum.melonds.MelonDSAndroidInterface
 import me.magnum.melonds.MelonEmulator
+import me.magnum.enhancements.EnhancementRuntimeGuard
 import me.magnum.melonds.common.PermissionHandler
 import me.magnum.melonds.common.romprocessors.RomFileProcessorFactory
 import me.magnum.melonds.common.runtime.ScreenshotFrameBufferProvider
@@ -74,6 +75,7 @@ class AndroidEmulatorManager(
     )
 
     private val _emulatorEvents = MutableSharedFlow<EmulatorEvent>(extraBufferCapacity = Int.MAX_VALUE)
+    @Volatile private var enhancedRuntimeGuards: List<EnhancementRuntimeGuard> = emptyList()
     override val emulatorEvents: Flow<EmulatorEvent> = _emulatorEvents.asSharedFlow()
 
     private val achievementsSharedFlow = MutableSharedFlow<RAEvent>(replay = 0, extraBufferCapacity = Int.MAX_VALUE)
@@ -338,6 +340,18 @@ class AndroidEmulatorManager(
                         dldiFolderSyncManager.syncBackIfNeeded()
                         return@withContext RomLaunchResult.LaunchFailed(MelonEmulator.LoadResult.NDS_FAILED)
                     }
+                    if (!enhancedRuntimeGuards.all {
+                            MelonEmulator.validateEnhancedRuntimeGuard(
+                                it.address.toInt(),
+                                it.expectedWord.toInt(),
+                            )
+                        }) {
+                        cameraManager.stopCurrentCameraSource()
+                        MelonEmulator.stopEmulation()
+                        messageQueue.stop()
+                        dldiFolderSyncManager.syncBackIfNeeded()
+                        return@withContext RomLaunchResult.LaunchFailed(MelonEmulator.LoadResult.NDS_FAILED)
+                    }
                     MelonEmulator.setupCheats(cheats.toTypedArray())
                     MelonEmulator.startEmulation(startPaused = true)
 
@@ -355,6 +369,10 @@ class AndroidEmulatorManager(
                 RomLaunchResult.LaunchFailed(MelonEmulator.LoadResult.NDS_FAILED)
             }
         }
+    }
+
+    override fun setEnhancedRuntimeGuards(guards: List<EnhancementRuntimeGuard>) {
+        enhancedRuntimeGuards = guards.toList()
     }
 
     private suspend fun loadInstalledDsiWareShortcut(rom: Rom, cheats: List<Cheat>): RomLaunchResult {

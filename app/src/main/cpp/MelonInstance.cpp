@@ -2840,6 +2840,11 @@ void MelonInstance::setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 
     slot2CameraFlags.store(flags, std::memory_order_relaxed);
 }
 
+bool MelonInstance::validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const
+{
+    return nds != nullptr && nds->ARM9Read32(address) == expectedWord;
+}
+
 int MelonInstance::readAudioOutput(s16* buffer, int length)
 {
     return nds->SPU.ReadOutput(buffer, length);

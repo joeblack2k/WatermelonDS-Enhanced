@@ -2428,6 +2428,17 @@ Java_me_magnum_melonds_MelonEmulator_setSlot2CameraState(
         static_cast<u16>(recenterSequence), static_cast<u16>(flags));
 }
 
+JNIEXPORT jboolean JNICALL
+Java_me_magnum_melonds_MelonEmulator_validateEnhancedRuntimeGuard(
+    JNIEnv* env, jobject thiz, jint address, jint expectedWord)
+{
+    (void)env;
+    (void)thiz;
+    return MelonDSAndroid::validateEnhancedRuntimeGuard(
+        static_cast<u32>(address),
+        static_cast<u32>(expectedWord));
+}
+
 JNIEXPORT void JNICALL
 Java_me_magnum_melonds_MelonEmulator_setFastForwardEnabled(JNIEnv* env, jobject thiz, jboolean enabled)
 {
