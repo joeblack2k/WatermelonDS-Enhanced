@@ -11,7 +11,8 @@
   "capabilities": [
     "CONTROLLER_AXIS_OWNER",
     "RUNTIME_INPUT_PROTOCOL",
-    "RUNTIME_CODE_PATCH"
+    "RUNTIME_CODE_PATCH",
+    "SLOT2_ANALOG"
   ],
   "runtimeProtocol": "sm64ds-camera-v1",
   "patches": [

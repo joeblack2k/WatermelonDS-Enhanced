@@ -30,6 +30,7 @@ enum class EnhancementCapability {
     RUNTIME_INPUT_PROTOCOL,
     RUNTIME_CODE_PATCH,
     NATIVE_EMULATOR_CAPABILITY,
+    SLOT2_ANALOG,
 }
 
 @Serializable

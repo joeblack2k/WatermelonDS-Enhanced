@@ -180,6 +180,7 @@ import me.magnum.melonds.impl.layout.UILayoutProvider
 import me.magnum.melonds.impl.system.NetworkStatusProvider
 import me.magnum.enhancements.EnhancementRomIdentity
 import me.magnum.enhancements.EnhancementSession
+import me.magnum.enhancements.EnhancementCapability
 import me.magnum.enhancements.createSession
 import me.magnum.melonds.ui.emulator.component.RetroAchievementsSubmissionHandler
 import me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption
@@ -761,7 +762,12 @@ class EmulatorViewModel @Inject constructor(
                 }
                 null
             }
-            val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(rom)
+            val launchRom = if (activeEnhancementSession?.hasCapability(EnhancementCapability.SLOT2_ANALOG) == true) {
+                rom.copy(config = rom.config.copy(gbaSlotConfig = me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.AnalogInput))
+            } else {
+                rom
+            }
+            val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(launchRom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
                 retroAchievementsEndpointProvider.beginSession()
             } else {
@@ -802,7 +808,7 @@ class EmulatorViewModel @Inject constructor(
             startedSessionOnlineLive = launchDecision.networkMode == RetroAchievementsNetworkMode.ONLINE_LIVE
 
             startEmulatorSession(
-                sessionType = EmulatorSession.SessionType.RomSession(rom),
+                sessionType = EmulatorSession.SessionType.RomSession(launchRom),
                 areRetroAchievementsEnabled = isRetroAchievementsEnabledForLaunch,
                 isRetroAchievementsHardcoreModeEnabled = launchDecision.sessionMode == RetroAchievementsSessionMode.HARDCORE,
             )
@@ -825,8 +831,8 @@ class EmulatorViewModel @Inject constructor(
             }
 
             val cheats = romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()
-            confirmRetroArchShaderCompile(rom.config)
-            val result = emulatorManager.loadRom(rom, cheats)
+            confirmRetroArchShaderCompile(launchRom.config)
+            val result = emulatorManager.loadRom(launchRom, cheats)
             when (result) {
                 is RomLaunchResult.LaunchFailedRomNotFound,
                 is RomLaunchResult.LaunchFailedRomNotSupported,
@@ -839,11 +845,11 @@ class EmulatorViewModel @Inject constructor(
                     if (!result.isGbaLoadSuccessful) {
                         _toastEvent.tryEmit(ToastEvent.GbaLoadFailed)
                     }
-                    _emulatorState.value = EmulatorState.RunningRom(rom)
-                    maybeAutoLoadStateOnLaunch(rom)
-                    DebugCommandStateStore.onRunningRomReady(rom.uri, rom.name)
+                    _emulatorState.value = EmulatorState.RunningRom(launchRom)
+                    maybeAutoLoadStateOnLaunch(launchRom)
+                    DebugCommandStateStore.onRunningRomReady(launchRom.uri, launchRom.name)
                     startTrackingFps()
-                    startTrackingPlayTime(rom)
+                    startTrackingPlayTime(launchRom)
                 }
             }
         } catch (exception: Throwable) {
