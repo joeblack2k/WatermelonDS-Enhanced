@@ -20,6 +20,7 @@ import me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig
 import me.magnum.melonds.domain.repositories.RomsRepository
 import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.impl.RomIconProvider
+import me.magnum.melonds.impl.EnhancementCatalogLoader
 import me.magnum.melonds.parcelables.RomParcelable
 import me.magnum.melonds.ui.romdetails.model.RomConfigUiState
 import me.magnum.melonds.ui.romdetails.model.RomConfigUpdateEvent
@@ -34,6 +35,7 @@ class RomDetailsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val romIconProvider: RomIconProvider,
     private val uriPermissionManager: UriPermissionManager,
+    private val enhancementCatalogLoader: EnhancementCatalogLoader,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -107,6 +109,7 @@ class RomDetailsViewModel @Inject constructor(
                     globalRetroArchShaderParameters = shaderConfig.second,
                     hasValidRetroArchShaderRoot = shaderConfig.third,
                     globalRetroAchievementsEnabled = globalRetroAchievementsEnabled,
+                    availableEnhancementIds = enhancementCatalogLoader.load().manifests.map { it.id },
                 )
             }.collect {
                 uiStateFlow.value = RomConfigUiState.Ready(it)
@@ -168,6 +171,7 @@ class RomDetailsViewModel @Inject constructor(
             is RomConfigUpdateEvent.RetroArchShaderPresetPathUpdate -> currentRomConfig.copy(retroArchShaderPresetPath = event.presetPath)
             is RomConfigUpdateEvent.RetroArchShaderParametersUpdate -> currentRomConfig.copy(retroArchShaderParameters = event.parameters)
             is RomConfigUpdateEvent.RetroAchievementsEnabledUpdate -> currentRomConfig.copy(retroAchievementsEnabled = event.enabled)
+            is RomConfigUpdateEvent.EnhancedAddonsUpdate -> currentRomConfig.copy(enabledEnhancements = event.enabledIds)
         }
 
         newRomConfig?.let { newConfig ->

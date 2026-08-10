@@ -36,4 +36,6 @@ data class RomConfigUiModel(
     val hasValidRetroArchShaderRoot: Boolean = false,
     val retroAchievementsEnabled: Boolean? = null,
     val globalRetroAchievementsEnabled: Boolean = true,
+    val availableEnhancementIds: List<String> = emptyList(),
+    val enabledEnhancements: Set<String> = emptySet(),
 )

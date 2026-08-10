@@ -420,6 +420,7 @@
     <string name="audio_latency">Audio latency</string>
     <string name="microphone_source">Microphone source</string>
     <string name="controller_layout">Layouts</string>
+    <string name="enhanced_addons">Enhanced add-ons</string>
     <string name="category_save_files">Save Files</string>
     <string name="category_save_files_summary">Save file &amp; save state locations</string>
     <string name="save_next_rom">Save next to ROM file</string>

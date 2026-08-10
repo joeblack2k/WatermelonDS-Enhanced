@@ -29,6 +29,7 @@ class RomDetailsUiMapper(
         globalRetroArchShaderParameters: String?,
         hasValidRetroArchShaderRoot: Boolean,
         globalRetroAchievementsEnabled: Boolean,
+        availableEnhancementIds: List<String>,
     ): RomConfigUiModel {
         return RomConfigUiModel(
             runtimeConsoleType = romConfig.runtimeConsoleType,
@@ -57,6 +58,8 @@ class RomDetailsUiMapper(
             hasValidRetroArchShaderRoot = hasValidRetroArchShaderRoot,
             retroAchievementsEnabled = romConfig.retroAchievementsEnabled,
             globalRetroAchievementsEnabled = globalRetroAchievementsEnabled,
+            availableEnhancementIds = availableEnhancementIds,
+            enabledEnhancements = romConfig.enabledEnhancements,
         )
     }
 

@@ -446,6 +446,26 @@ private fun Content(
             )
         }
 
+        if (romConfig.availableEnhancementIds.isNotEmpty()) {
+            ConfigSection(title = stringResource(R.string.enhanced_addons)) {
+                romConfig.availableEnhancementIds.forEachIndexed { index, id ->
+                    ConfigToggleRow(
+                        title = id,
+                        isOn = id in romConfig.enabledEnhancements,
+                        showDivider = index > 0,
+                        onToggle = { enabled ->
+                            onConfigUpdate(
+                                RomConfigUpdateEvent.EnhancedAddonsUpdate(
+                                    if (enabled) romConfig.enabledEnhancements + id
+                                    else romConfig.enabledEnhancements - id,
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+        }
+
         ConfigSection(title = stringResource(R.string.controller_layout)) {
             ConfigRow(
                 title = stringResource(R.string.controller_layout),
