@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "sm64ds.eu.60fps",
+  "name": "SM64DS EU 60 FPS",
+  "version": "0.1.0",
+  "author": "WatermelonDS Enhanced contributors",
+  "status": "source-only",
+  "match": {
+    "gameCode": "ASMP",
+    "headerChecksum": "TODO_FROM_SUPPORTED_ROM"
+  },
+  "capabilities": [
+    "GAME_TIMESTEP_PATCH",
+    "RUNTIME_CODE_PATCH"
+  ],
+  "patches": [
+    {
+      "type": "ACTION_REPLAY",
+      "file": "patches/60fps.ards",
+      "apply": "RUNTIME",
+      "expectedOriginalWords": {}
+    }
+  ],
+  "hardcoreCompatible": false
+}
