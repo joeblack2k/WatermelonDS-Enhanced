@@ -16,5 +16,8 @@ expected original word differs. The placeholder header checksum in the
 manifest must be replaced with the supported ROM's header value before the
 package can match a ROM.
 
-The current ThorDS camera source is the reference implementation to port into
-this package. It is not part of the generic WatermelonDS input or launch path.
+The checked-in assembly source is only a build input. Generate
+`patches/camera.ards`, `patches/camera.overlay`, and the expected-word map from
+the locally supplied ARM9 image and object file. Copy that generated map into
+the manifest before installing the package. The source and generated payloads
+are not part of the generic WatermelonDS input or launch path.

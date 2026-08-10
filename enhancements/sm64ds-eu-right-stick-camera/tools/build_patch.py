@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import struct
 from pathlib import Path
 
@@ -68,6 +69,8 @@ def main() -> None:
     parser.add_argument("--arm9-image", type=Path, required=True)
     parser.add_argument("--object", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--overlay-output", type=Path)
+    parser.add_argument("--guard-output", type=Path)
     args = parser.parse_args()
 
     image = args.arm9_image.read_bytes()
@@ -115,6 +118,24 @@ def main() -> None:
 
     digest = hashlib.sha256("\n".join(words).encode("ascii") + b"\n").hexdigest()
     args.output.write_text("\n".join(words) + "\n", encoding="ascii")
+    if args.overlay_output or args.guard_output:
+        overlay_words = words[:-1]
+        expected = {
+            f"0x{HOOK:08X}": f"0x{EXPECTED_HOOK_WORD:08X}",
+            f"0x{PITCH_BRIDGE_ADDRESS:08X}": f"0x{PITCH_BRIDGE_ORIGINAL_WORD:08X}",
+            **{
+                f"0x{address:08X}": f"0x{original:08X}"
+                for address, original, _ in TARGET_BRIDGE_PATCHES
+            },
+            **{
+                f"0x{PAYLOAD + offset:08X}": "0x00000000"
+                for offset in range(0, len(payload), 4)
+            },
+        }
+        if args.overlay_output:
+            args.overlay_output.write_text("\n".join(overlay_words) + "\n", encoding="ascii")
+        if args.guard_output:
+            args.guard_output.write_text(json.dumps(expected, indent=2) + "\n", encoding="utf-8")
     print(f"payload_bytes={len(payload)}")
     print(f"hook_original={hook_original:08X}")
     print(f"ar_sha256={digest}")

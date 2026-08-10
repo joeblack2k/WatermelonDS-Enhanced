@@ -22,9 +22,9 @@
   "patches": [
     {
       "type": "RUNTIME_OVERLAY",
-      "file": "runtime/sm64ds_eu_smooth_camera.s",
+      "file": "patches/camera.overlay",
       "apply": "RUNTIME",
-      "provenance": "ThorDS smooth-camera source; generated patch is guarded by expected ARM9 words",
+      "provenance": "Generated from the locally supplied ARM9 image and camera object; guard map must be copied from the generator output",
       "expectedOriginalWords": {
         "0x02009E70": "0xE92D4FF0",
         "0x0200A7A8": "0xE1C107BC",
