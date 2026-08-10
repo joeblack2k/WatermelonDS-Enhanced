@@ -108,5 +108,5 @@ data class EnhancementRomIdentity(
 fun EnhancementManifest.matches(identity: EnhancementRomIdentity): Boolean {
     return match.gameCode == identity.gameCode &&
         (match.headerChecksum == null || match.headerChecksum.equals(identity.headerChecksum, ignoreCase = true)) &&
-        identity.sha256.lowercase() in match.sha256.map(String::lowercase)
+        match.sha256.isEmpty() || identity.sha256.lowercase() in match.sha256.map(String::lowercase)
 }

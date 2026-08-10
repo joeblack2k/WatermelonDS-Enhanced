@@ -9,10 +9,16 @@ import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.domain.model.ControllerConfiguration
 import me.magnum.melonds.domain.model.Input
 import me.magnum.melonds.domain.model.InputConfig
+import me.magnum.enhancements.CameraInputProtocol
 import java.util.Locale
 import kotlin.math.absoluteValue
 
-class InputProcessor(private val controllerConfiguration: ControllerConfiguration, private val systemInputListener: IInputListener, private val frontendInputListener: IInputListener) : INativeInputListener {
+class InputProcessor(
+    private val controllerConfiguration: ControllerConfiguration,
+    private val systemInputListener: IInputListener,
+    private val frontendInputListener: IInputListener,
+    private val runtimeProtocol: String? = null,
+) : INativeInputListener {
     companion object {
         private const val TAG = "InputProcessor"
         private const val SLOT2_ANALOG_LOG_INTERVAL_MS = 1500L
@@ -42,6 +48,7 @@ class InputProcessor(private val controllerConfiguration: ControllerConfiguratio
     private var slot2DigitalRightPressed = false
     private var slot2DigitalUpPressed = false
     private var slot2DigitalDownPressed = false
+    private val cameraProtocol = CameraInputProtocol()
 
     init {
         val axis = controllerConfiguration.inputMapper.flatMap { inputConfig ->
@@ -56,6 +63,12 @@ class InputProcessor(private val controllerConfiguration: ControllerConfiguratio
     }
 
     override fun onKeyEvent(keyEvent: KeyEvent): Boolean {
+        if (runtimeProtocol == "sm64ds-camera-v1" && keyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR) {
+            if (keyEvent.action == KeyEvent.ACTION_DOWN && keyEvent.repeatCount == 0) {
+                sendCameraState(cameraProtocol.recenter())
+            }
+            return true
+        }
         val input = controllerConfiguration.keyToInput(keyEvent.keyCode) ?: return false
         val fromController = keyEvent.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)
             || keyEvent.isFromSource(InputDevice.SOURCE_JOYSTICK)
@@ -80,11 +93,28 @@ class InputProcessor(private val controllerConfiguration: ControllerConfiguratio
     override fun onMotionEvent(motionEvent: MotionEvent): Boolean {
         if (isControllerMotionEvent(motionEvent)) {
             val slot2Handled = processSlot2AnalogFromMotionEvent(motionEvent)
+            val cameraHandled = if (runtimeProtocol == "sm64ds-camera-v1") {
+                val x = motionEvent.getAxisValue(MotionEvent.AXIS_Z)
+                    .takeIf { it.absoluteValue > 0.001f }
+                    ?: motionEvent.getAxisValue(MotionEvent.AXIS_RX)
+                val y = motionEvent.getAxisValue(MotionEvent.AXIS_RZ)
+                    .takeIf { it.absoluteValue > 0.001f }
+                    ?: motionEvent.getAxisValue(MotionEvent.AXIS_RY)
+                sendCameraState(cameraProtocol.update(x, y))
+                true
+            } else {
+                false
+            }
 
             val deviceAxis = axisStates.filterKeys { it.deviceId == null || it.deviceId == motionEvent.deviceId }
             deviceAxis.forEach {
                 val axis = it.key
                 val axisState = it.value
+                if (cameraHandled && (axis.axisCode == MotionEvent.AXIS_Z || axis.axisCode == MotionEvent.AXIS_RZ)) {
+                    axisState.value = 0f
+                    axisState.active = false
+                    return@forEach
+                }
 
                 val newValue = motionEvent.getAxisValue(axis.axisCode)
                 val clampedValue = when (axis.direction) {
@@ -105,10 +135,20 @@ class InputProcessor(private val controllerConfiguration: ControllerConfiguratio
                 }
                 axisState.value = clampedValue
             }
-            return slot2Handled || deviceAxis.isNotEmpty()
+            return slot2Handled || cameraHandled || deviceAxis.isNotEmpty()
         } else {
             return false
         }
+    }
+
+    private fun sendCameraState(state: me.magnum.enhancements.CameraInputState) {
+        MelonEmulator.setSlot2CameraState(
+            state.yawQ12,
+            state.pitchQ12,
+            state.yawUnitsPerTick,
+            state.recenterSequence,
+            state.flags,
+        )
     }
 
     override fun onMotionEventSlot2(motionEvent: MotionEvent): Boolean {

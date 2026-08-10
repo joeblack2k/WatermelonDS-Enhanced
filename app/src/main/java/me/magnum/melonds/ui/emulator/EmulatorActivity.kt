@@ -66,6 +66,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -814,9 +815,12 @@ class EmulatorActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.controllerConfiguration.collect {
-                    setupInputHandling(it)
-                    connectedControllerManager.setCurrentControllerConfiguration(it)
+                combine(
+                    viewModel.controllerConfiguration,
+                    viewModel.activeRuntimeInputProtocol,
+                ) { configuration, protocol -> configuration to protocol }.collect {
+                    setupInputHandling(it.first, it.second)
+                    connectedControllerManager.setCurrentControllerConfiguration(it.first)
                 }
             }
         }
@@ -2194,8 +2198,8 @@ class EmulatorActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration) {
-        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler)
+    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration, runtimeProtocol: String? = null) {
+        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler, runtimeProtocol)
     }
 
     private fun handleBackPressed() {

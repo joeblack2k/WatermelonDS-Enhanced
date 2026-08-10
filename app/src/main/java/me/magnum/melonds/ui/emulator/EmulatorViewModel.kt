@@ -285,6 +285,8 @@ class EmulatorViewModel @Inject constructor(
     private var raBootstrapJob: Job? = null
     private var raSessionJob: Job? = null
     private var activeEnhancementSession: EnhancementSession? = null
+    private val _activeRuntimeInputProtocol = MutableStateFlow<String?>(null)
+    val activeRuntimeInputProtocol = _activeRuntimeInputProtocol.asStateFlow()
 
     private enum class RetroAchievementsNetworkMode {
         ONLINE_LIVE,
@@ -762,6 +764,9 @@ class EmulatorViewModel @Inject constructor(
                 }
                 null
             }
+            _activeRuntimeInputProtocol.value = activeEnhancementSession?.addOns
+                ?.mapNotNull { it.runtimeProtocol }
+                ?.singleOrNull()
             val launchRom = if (activeEnhancementSession?.hasCapability(EnhancementCapability.SLOT2_ANALOG) == true) {
                 rom.copy(config = rom.config.copy(gbaSlotConfig = me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig.AnalogInput))
             } else {
@@ -1753,6 +1758,9 @@ class EmulatorViewModel @Inject constructor(
         unloadAndReleaseActiveRuntimeAuthenticationLease("emulator_stopped")
         activeRuntimeBridgeConfig = null
         activeRuntimePath = RetroAchievementsRuntimePath.DISABLED
+        activeEnhancementSession?.close()
+        activeEnhancementSession = null
+        _activeRuntimeInputProtocol.value = null
         emulatorManager.stopEmulator()
         screenshotFrameBufferProvider.clearBuffer()
     }
@@ -2692,6 +2700,9 @@ class EmulatorViewModel @Inject constructor(
         currentRom = null
         lastEndpointRestartNoticeGeneration = null
         activeRomConfig.value = null
+        activeEnhancementSession?.close()
+        activeEnhancementSession = null
+        _activeRuntimeInputProtocol.value = null
         currentRetroAchievementsGameId = null
         offlineSyncChoiceDeferred?.cancel()
         offlineSyncChoiceDeferred = null

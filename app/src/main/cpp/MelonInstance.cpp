@@ -1917,6 +1917,7 @@ void MelonInstance::start()
 
 void MelonInstance::reset()
 {
+    setSlot2CameraState(0, 0, 0, 0, 0);
     nds->Reset();
     setBatteryLevels();
     setDateTime();
@@ -2412,6 +2413,12 @@ u32 MelonInstance::runFrame()
 
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogX, slot2AnalogX.load(std::memory_order_relaxed));
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogY, slot2AnalogY.load(std::memory_order_relaxed));
+    nds->GBACartSlot.SetCameraState(
+        slot2CameraYawInputQ12.load(std::memory_order_relaxed),
+        slot2CameraPitchInputQ12.load(std::memory_order_relaxed),
+        slot2CameraYawUnitsPerTick.load(std::memory_order_relaxed),
+        slot2CameraRecenterSequence.load(std::memory_order_relaxed),
+        slot2CameraFlags.load(std::memory_order_relaxed));
 
     int screenWidth;
     int screenHeight;
@@ -2744,6 +2751,7 @@ void MelonInstance::handleVulkanRuntimeFailure(const char* reason)
 
 void MelonInstance::stop()
 {
+    setSlot2CameraState(0, 0, 0, 0, 0);
     std::unique_ptr<RetroAchievements::RetroAchievementsManager> managerToDestroy;
     {
         std::lock_guard lock(retroAchievementsManagerLifetimeMutex);
@@ -2820,6 +2828,16 @@ void MelonInstance::setSlot2AnalogInput(float x, float y)
 {
     slot2AnalogX.store(std::clamp(x, -1.0f, 1.0f), std::memory_order_relaxed);
     slot2AnalogY.store(std::clamp(y, -1.0f, 1.0f), std::memory_order_relaxed);
+}
+
+void MelonInstance::setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
+    u16 recenterSequence, u16 flags)
+{
+    slot2CameraYawInputQ12.store(std::clamp<s16>(yawInputQ12, -4096, 4096), std::memory_order_relaxed);
+    slot2CameraPitchInputQ12.store(std::clamp<s16>(pitchInputQ12, -4096, 4096), std::memory_order_relaxed);
+    slot2CameraYawUnitsPerTick.store(yawUnitsPerTick, std::memory_order_relaxed);
+    slot2CameraRecenterSequence.store(recenterSequence, std::memory_order_relaxed);
+    slot2CameraFlags.store(flags, std::memory_order_relaxed);
 }
 
 int MelonInstance::readAudioOutput(s16* buffer, int length)
