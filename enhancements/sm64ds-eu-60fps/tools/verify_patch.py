@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from pathlib import Path
 
 ARM9_BASE = 0x02004000
@@ -53,6 +54,53 @@ PLAYER_VERTICAL_ACCELERATION = (0xE594509C, 0xE584C09C, 0xE584509C)
 PLAYER_VERTICAL_CORRECTION = (0xE08771C5, 0xE04771C5)
 PLAYER_TIMER_CONTINUATIONS = (0x020E4F14, 0x020E4FB8, 0x020E4FE0, 0x020E508C)
 WORLD_LITERALS = (CADENCE, 0x020A0DB0, 0x0210A83C, 0x02053884, 0x02022F24)
+CONTRACT_CLAIMS = (
+    "cadence",
+    "gameplayPhysics",
+    "timers",
+    "animation",
+    "particles",
+    "audio",
+    "saveState",
+)
+
+
+def verify_manifest_contract(path: Path, patch_path: Path | None = None):
+    """Reject a claimed addon unless every independent contract gate is verified."""
+    manifest = json.loads(path.read_text(encoding="ascii"))
+    if any(
+        str(capability).upper() in {"OVERCLOCK", "EMULATOR_OVERCLOCK"}
+        for capability in manifest.get("capabilities", ())
+    ):
+        raise ValueError("emulator overclock is not a 60fps addon contract")
+    if manifest.get("status") != "VERIFIED":
+        raise ValueError("source-only manifest is not a concrete addon")
+    verification = manifest.get("verification")
+    if not isinstance(verification, dict):
+        raise ValueError("missing verification contract")
+    missing = [
+        claim for claim in (*CONTRACT_CLAIMS, "guardedPayload")
+        if verification.get(claim) != "VERIFIED"
+    ]
+    if missing:
+        raise ValueError(f"unverified contract claims: {', '.join(missing)}")
+    if verification.get("payloadInput") != "VERIFIED":
+        raise ValueError("missing revision-specific payload input")
+    if not manifest.get("patches"):
+        raise ValueError("verified addon has no concrete payload")
+    if patch_path is None:
+        return
+    matching = [
+        patch for patch in manifest["patches"]
+        if patch.get("type") == "ACTION_REPLAY"
+        and (path.parent / patch.get("file", "")).resolve() == patch_path.resolve()
+    ]
+    if len(matching) != 1:
+        raise ValueError("manifest must bind the verified patch path and ACTION_REPLAY type")
+    expected_hash = matching[0].get("sha256")
+    actual_hash = hashlib.sha256(patch_path.read_bytes()).hexdigest()
+    if expected_hash != actual_hash:
+        raise ValueError("manifest patch SHA-256 does not match the verified file")
 
 
 def parse(path: Path):
@@ -400,9 +448,11 @@ def verify(path: Path, arm9_path: Path, overlay_path: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("patch", type=Path)
+    parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--arm9-image", type=Path, required=True)
     parser.add_argument("--overlay2-image", type=Path, required=True)
     args = parser.parse_args()
+    verify_manifest_contract(args.manifest, args.patch)
     result = verify(args.patch, args.arm9_image, args.overlay2_image)
     for key, value in result.items():
         print(f"{key}={value}")

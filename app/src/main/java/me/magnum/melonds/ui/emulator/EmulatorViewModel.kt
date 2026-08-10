@@ -186,6 +186,8 @@ import me.magnum.enhancements.EnhancementSession
 import me.magnum.enhancements.EnhancementCapability
 import me.magnum.enhancements.createSession
 import me.magnum.enhancements.EnhancementRuntimeInput
+import me.magnum.enhancements.EnhancementPresentationState
+import me.magnum.enhancements.EnhancementStatus
 import me.magnum.melonds.ui.emulator.component.RetroAchievementsSubmissionHandler
 import me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption
 import me.magnum.melonds.ui.emulator.model.RumbleEvent
@@ -1630,6 +1632,20 @@ class EmulatorViewModel @Inject constructor(
 
     fun getConfiguredVideoRenderer(): VideoRenderer {
         return settingsRepository.getCurrentVideoRenderer()
+    }
+
+    fun enhancementPresentationState(): EnhancementPresentationState? {
+        val session = activeEnhancementSession ?: return null
+        val verifiedPatch = session.addOns.any {
+            it.status == EnhancementStatus.VERIFIED &&
+                it.patches.isNotEmpty()
+        }
+        val nativeCapabilities = if (getConfiguredVideoRenderer() == VideoRenderer.VULKAN) {
+            setOf(EnhancementCapability.NATIVE_EMULATOR_CAPABILITY)
+        } else {
+            emptySet()
+        }
+        return session.presentationState(verifiedPatch, nativeCapabilities)
     }
 
     fun onCheatsChanged() {

@@ -17,6 +17,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <cctype>
+#include <sstream>
 #include <time.h>
 #include <MelonDS.h>
 #include <MelonDSAudio.h>
@@ -874,49 +876,26 @@ Java_me_magnum_melonds_MelonEmulator_setupCheats(JNIEnv* env, jobject thiz, jobj
             continue;
         }
         std::string codeString = codeStringPtr;
-        // Since each part of a cheat code has 8 characters (4 bytes), we can add 1 to the length (to ensure that each part has a matching space separator) and divide by 9
-        // (part length + space separator) to calculate the total number of parts in the cheat
-        size_t codeLength = (codeString.size() + 1) / 9;
-
         bool isBad = false;
-        std::size_t start = 0;
-        std::size_t end = 0;
-
         MelonDSAndroid::Cheat internalCheat;
-        internalCheat.code.reserve(codeLength);
-
-        // Split code string into sections separated by a space
-        while ((end = codeString.find(' ', start)) != std::string::npos) {
-            if (end != start) {
-                char* endPointer;
-                std::string sectionString = codeString.substr(start, end - start);
-                // Each code section must be 4 bytes (8 hex characters)
-                if (sectionString.size() != 8) {
-                    isBad = true;
-                    break;
-                }
-
-                unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
-                if (*endPointer == 0) {
-                    internalCheat.code.push_back((u32) section);
-                } else {
-                    isBad = true;
-                    break;
-                }
-            }
-            start = end + 1;
-        }
-
-        if (!isBad && end != start) {
+        std::istringstream words(codeString);
+        std::string sectionString;
+        while (words >> sectionString) {
             char* endPointer;
-            std::string sectionString = codeString.substr(start, end - start);
             if (sectionString.size() != 8) {
                 isBad = true;
-            } else {
-                unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
+                break;
+            }
+            unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
+            if (*endPointer == 0) {
                 internalCheat.code.push_back((u32) section);
+            } else {
+                isBad = true;
+                break;
             }
         }
+        if (internalCheat.code.empty() || internalCheat.code.size() % 2 != 0)
+            isBad = true;
 
         env->ReleaseStringUTFChars(code, codeStringPtr);
         env->DeleteLocalRef(code);

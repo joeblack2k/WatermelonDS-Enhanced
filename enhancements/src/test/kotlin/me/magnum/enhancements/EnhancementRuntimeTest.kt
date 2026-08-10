@@ -137,6 +137,106 @@ class EnhancementRuntimeTest {
         }
     }
 
+    @Test
+    fun reportsRequestedAndEffectiveLayerAwarePresentationWhenGuardsPass() {
+        val addOn = manifest("widescreen", protocol = null, axisOwner = false).copy(
+            capabilities = setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION),
+        )
+        val session = EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+
+        assertEquals(
+            EnhancementPresentationState(
+                requested = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+                effective = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+            ),
+            session.presentationState(
+                verifiedGamePatch = true,
+                availableNativeCapabilities = setOf(EnhancementCapability.NATIVE_EMULATOR_CAPABILITY),
+            ),
+        )
+    }
+
+    @Test
+    fun fallsBackToNative43WhenNativePresentationCapabilityIsMissing() {
+        val addOn = manifest("widescreen", protocol = null, axisOwner = false).copy(
+            capabilities = setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION),
+        )
+        val session = EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+
+        assertEquals(
+            EnhancementPresentationState(
+                requested = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+                effective = EnhancementPresentationMode.NATIVE_4_3,
+            ),
+            session.presentationState(verifiedGamePatch = true, availableNativeCapabilities = emptySet()),
+        )
+    }
+
+    @Test
+    fun fallsBackToNative43WhenGamePatchGuardFails() {
+        val addOn = manifest("widescreen", protocol = null, axisOwner = false).copy(
+            capabilities = setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION),
+        )
+        val session = EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+
+        assertEquals(
+            EnhancementPresentationState(
+                requested = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+                effective = EnhancementPresentationMode.NATIVE_4_3,
+            ),
+            session.presentationState(
+                verifiedGamePatch = false,
+                availableNativeCapabilities = setOf(EnhancementCapability.NATIVE_EMULATOR_CAPABILITY),
+            ),
+        )
+    }
+
+    @Test
+    fun requestsAndUsesNative43WithoutLayerAwareAddon() {
+        val session = EnhancementCatalog(emptyList()).createSession(identity, emptySet())
+
+        val state = session.presentationState(
+            verifiedGamePatch = true,
+            availableNativeCapabilities = setOf(EnhancementCapability.NATIVE_EMULATOR_CAPABILITY),
+        )
+        assertEquals(EnhancementPresentationMode.NATIVE_4_3, state.requested)
+        assertEquals(EnhancementPresentationMode.NATIVE_4_3, state.effective)
+        assertEquals(false, state.requiresNative43Fallback())
+    }
+
+    @Test
+    fun native43FallbackOnlyAppliesWhenLayerAwareEnhancementIsNotEffective() {
+        val fallback = EnhancementPresentationState(
+            requested = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+            effective = EnhancementPresentationMode.NATIVE_4_3,
+        )
+        val effective = fallback.copy(
+            effective = EnhancementPresentationMode.LAYER_AWARE_PRESENTATION,
+        )
+        val native = EnhancementPresentationState(
+            requested = EnhancementPresentationMode.NATIVE_4_3,
+            effective = EnhancementPresentationMode.NATIVE_4_3,
+        )
+
+        assertEquals(true, fallback.requiresNative43Fallback())
+        assertEquals(false, effective.requiresNative43Fallback())
+        assertEquals(false, native.requiresNative43Fallback())
+    }
+
+    @Test
+    fun sourceOnlyAddonCannotProvideRuntimeCapabilities() {
+        val sourceOnly = manifest("source.only", protocol = null, axisOwner = false).copy(
+            status = EnhancementStatus.SOURCE_ONLY,
+            capabilities = setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION),
+        )
+        val session = EnhancementCatalog(listOf(sourceOnly))
+            .createSession(identity, setOf(sourceOnly.id))
+
+        assertEquals(emptySet<EnhancementCapability>(), session.capabilities)
+        assertEquals(null, session.runtimeInput)
+        assertEquals(emptyList<EnhancementPatchResource>(), session.patchPlan.runtimePatches)
+    }
+
     private fun manifest(
         id: String,
         protocol: String? = "camera-v1",

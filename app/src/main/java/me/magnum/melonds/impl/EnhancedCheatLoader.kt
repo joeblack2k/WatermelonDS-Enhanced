@@ -11,7 +11,7 @@ class EnhancedCheatLoader @Inject constructor(
     private val catalogLoader: EnhancementCatalogLoader,
 ) {
     fun load(session: EnhancementSession): List<Cheat> {
-        return session.addOns.flatMap { addOn ->
+        return session.addOns.filter { it.status != me.magnum.enhancements.EnhancementStatus.SOURCE_ONLY }.flatMap { addOn ->
             addOn.patches
                 .filter {
                     it.type == EnhancementPatchType.ACTION_REPLAY &&
@@ -21,16 +21,16 @@ class EnhancedCheatLoader @Inject constructor(
                     val code = catalogLoader.readFiles(addOn, setOf(patch.file))[patch.file]
                         ?.decodeToString()
                         ?: error("Missing Action Replay patch: ${patch.file}")
-                    ActionReplayParser.parse(code).map { line ->
+                    listOf(
                         Cheat(
                             id = null,
                             cheatDatabaseId = 0,
                             name = "${addOn.name} ${addOn.version}",
                             description = patch.provenance,
-                            code = line,
+                            code = ActionReplayParser.parse(code),
                             enabled = true,
-                        )
-                    }
+                        ),
+                    )
                 }
         }
     }

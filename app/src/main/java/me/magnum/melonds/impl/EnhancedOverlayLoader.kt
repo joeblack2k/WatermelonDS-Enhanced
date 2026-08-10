@@ -10,7 +10,7 @@ class EnhancedOverlayLoader @Inject constructor(
     private val catalogLoader: EnhancementCatalogLoader,
 ) {
     fun load(session: EnhancementSession): List<EnhancementOverlayWord> {
-        return session.addOns.flatMap { addOn ->
+        return session.addOns.filter { it.status != me.magnum.enhancements.EnhancementStatus.SOURCE_ONLY }.flatMap { addOn ->
             addOn.patches
                 .filter { it.type == EnhancementPatchType.RUNTIME_OVERLAY }
                 .flatMap { patch ->

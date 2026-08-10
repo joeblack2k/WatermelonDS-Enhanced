@@ -134,6 +134,7 @@ import me.magnum.melonds.ui.emulator.model.ToastEvent
 import me.magnum.melonds.ui.emulator.model.RetroAchievementsLoadStage
 import me.magnum.melonds.ui.emulator.model.VulkanCompileProgress
 import me.magnum.melonds.ui.emulator.model.VulkanPresentationConfig
+import me.magnum.melonds.ui.emulator.model.useNative43Fallback
 import me.magnum.melonds.ui.emulator.render.ChoreographerFrameRenderer
 import me.magnum.melonds.ui.emulator.render.ChoreographerFrameRendererFactory
 import me.magnum.melonds.ui.emulator.render.ExternalPresentation
@@ -2090,12 +2091,13 @@ class EmulatorActivity : AppCompatActivity() {
         }
 
         val (surfaceWidth, surfaceHeight) = binding.surfaceMain.getCurrentSurfaceSize()
+        val native43Fallback = useNative43Fallback(viewModel.enhancementPresentationState())
         val (resolvedTopScreenRect, resolvedBottomScreenRect) = resolveVulkanScreenRects(
             topScreenRect = topScreenRect,
             bottomScreenRect = bottomScreenRect,
             surfaceWidth = if (surfaceWidth > 0) surfaceWidth else binding.surfaceMain.width,
             surfaceHeight = if (surfaceHeight > 0) surfaceHeight else binding.surfaceMain.height,
-            fallbackWhenEmpty = hybridTopScreenRect == null && hybridBottomScreenRect == null,
+            fallbackWhenEmpty = native43Fallback,
         )
 
         return VulkanPresentationConfig(
@@ -2105,10 +2107,10 @@ class EmulatorActivity : AppCompatActivity() {
             bottomAlpha = bottomAlpha,
             topOnTop = topOnTop,
             bottomOnTop = bottomOnTop,
-            hybridTopScreenRect = hybridTopScreenRect?.takeIf { it.width > 0 && it.height > 0 },
-            hybridBottomScreenRect = hybridBottomScreenRect?.takeIf { it.width > 0 && it.height > 0 },
-            hybridAlpha = hybridAlpha,
-            hybridOnTop = hybridOnTop,
+            hybridTopScreenRect = hybridTopScreenRect?.takeIf { !native43Fallback && it.width > 0 && it.height > 0 },
+            hybridBottomScreenRect = hybridBottomScreenRect?.takeIf { !native43Fallback && it.width > 0 && it.height > 0 },
+            hybridAlpha = hybridAlpha.takeIf { !native43Fallback } ?: 0f,
+            hybridOnTop = hybridOnTop && !native43Fallback,
             backgroundMode = currentMainScreenBackground.mode,
             videoFiltering = rendererConfiguration.videoFiltering,
             retroShaderEnabled = rendererConfiguration.videoFiltering == VideoFiltering.RETROARCH,

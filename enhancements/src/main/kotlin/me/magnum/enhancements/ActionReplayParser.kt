@@ -1,8 +1,8 @@
 package me.magnum.enhancements
 
 object ActionReplayParser {
-    fun parse(text: String): List<String> {
-        return text.lineSequence()
+    fun parse(text: String): String {
+        val lines = text.lineSequence()
             .map { it.substringBefore('#').trim() }
             .filter(String::isNotEmpty)
             .map { line ->
@@ -14,6 +14,7 @@ object ActionReplayParser {
                 words.joinToString(" ") { it.uppercase() }
             }
             .toList()
-            .also { require(it.isNotEmpty()) { "Action Replay payload is empty" } }
+        require(lines.isNotEmpty()) { "Action Replay payload is empty" }
+        return lines.joinToString("\n")
     }
 }

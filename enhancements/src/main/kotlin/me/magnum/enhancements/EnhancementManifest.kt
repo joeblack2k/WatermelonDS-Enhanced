@@ -10,6 +10,8 @@ data class EnhancementManifest(
     val name: String,
     val version: String,
     val author: String = "",
+    // null is the legacy installable-manifest format.
+    val status: EnhancementStatus? = null,
     val match: EnhancementMatch,
     val capabilities: Set<EnhancementCapability> = emptySet(),
     val patches: List<EnhancementPatch> = emptyList(),
@@ -23,6 +25,38 @@ data class EnhancementManifest(
     val requiresCapabilities: Set<EnhancementCapability> = emptySet(),
     val conflictsWith: Set<String> = emptySet(),
     val hardcoreCompatible: Boolean = false,
+    val verification: EnhancementVerification = EnhancementVerification(),
+)
+
+@Serializable
+enum class EnhancementStatus {
+    SOURCE_ONLY,
+    VERIFIED,
+}
+
+@Serializable
+enum class EnhancementClaim {
+    VERIFIED,
+    UNVERIFIED,
+}
+
+@Serializable
+enum class EnhancementPayloadInput {
+    VERIFIED,
+    MISSING,
+}
+
+@Serializable
+data class EnhancementVerification(
+    val cadence: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val gameplayPhysics: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val timers: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val animation: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val particles: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val audio: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val saveState: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val guardedPayload: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val payloadInput: EnhancementPayloadInput = EnhancementPayloadInput.MISSING,
 )
 
 @Serializable
@@ -39,6 +73,7 @@ enum class EnhancementCapability {
     RUNTIME_CODE_PATCH,
     NATIVE_EMULATOR_CAPABILITY,
     SLOT2_ANALOG,
+    LAYER_AWARE_PRESENTATION,
 }
 
 @Serializable
@@ -48,6 +83,7 @@ data class EnhancementPatch(
     val apply: EnhancementPatchApply = EnhancementPatchApply.RUNTIME,
     val provenance: String = "",
     val expectedOriginalWords: Map<String, String> = emptyMap(),
+    val sha256: String? = null,
 )
 
 @Serializable
@@ -68,7 +104,10 @@ object EnhancementManifestParser {
     private val json = Json { ignoreUnknownKeys = false }
 
     fun parse(serialized: String): EnhancementManifest {
-        val manifest = json.decodeFromString<EnhancementManifest>(serialized)
+        val manifest = json.decodeFromString<EnhancementManifest>(serialized).let {
+            // Legacy manifests had no status field and were installable.
+            it
+        }
         validate(manifest)
         return manifest
     }
@@ -77,6 +116,25 @@ object EnhancementManifestParser {
         require(manifest.schemaVersion == 1) { "Unsupported enhancement schema" }
         require(manifest.id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid enhancement id" }
         require(manifest.name.isNotBlank() && manifest.version.isNotBlank()) { "Missing enhancement metadata" }
+        if (manifest.status == EnhancementStatus.VERIFIED) {
+            require(manifest.verification.payloadInput == EnhancementPayloadInput.VERIFIED) {
+                "Verified enhancements need revision-specific payload input"
+            }
+            require(manifest.verification.guardedPayload == EnhancementClaim.VERIFIED) {
+                "Verified enhancements need guarded payload evidence"
+            }
+            require(
+                listOf(
+                    manifest.verification.cadence,
+                    manifest.verification.gameplayPhysics,
+                    manifest.verification.timers,
+                    manifest.verification.animation,
+                    manifest.verification.particles,
+                    manifest.verification.audio,
+                    manifest.verification.saveState,
+                ).all { it == EnhancementClaim.VERIFIED },
+            ) { "Verified enhancements need every timing contract claim" }
+        }
         require(manifest.match.gameCode.matches(Regex("[A-Z0-9]{4}"))) {
             "Game code must contain four uppercase ASCII letters or digits"
         }
@@ -91,6 +149,9 @@ object EnhancementManifestParser {
             "Duplicate enhancement patch file"
         }
         manifest.patches.forEach {
+            require(it.sha256 == null || it.sha256.matches(Regex("[0-9a-fA-F]{64}"))) {
+                "Invalid patch SHA-256"
+            }
             require(!it.file.startsWith("/") && ".." !in it.file.split('/')) {
                 "Patch file must stay inside the enhancement package"
             }

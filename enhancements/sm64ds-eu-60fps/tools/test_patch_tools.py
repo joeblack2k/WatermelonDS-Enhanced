@@ -23,6 +23,72 @@ verify = load("test_patch_verify", "verify_patch.py")
 
 
 class PatchToolsTest(unittest.TestCase):
+    def test_verified_manifest_binds_exact_patch_file_type_and_hash(self):
+        import hashlib
+        import json
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            patch = root / "payload.ards"
+            patch.write_text("02000000 00000001\n", encoding="ascii")
+            manifest = {
+                "status": "VERIFIED",
+                "patches": [{
+                    "type": "ACTION_REPLAY",
+                    "file": patch.name,
+                    "sha256": hashlib.sha256(patch.read_bytes()).hexdigest(),
+                }],
+                "verification": {
+                    claim: "VERIFIED"
+                    for claim in (*verify.CONTRACT_CLAIMS, "guardedPayload")
+                } | {"payloadInput": "VERIFIED"},
+            }
+            path = root / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="ascii")
+            verify.verify_manifest_contract(path, patch)
+            patch.write_text("D0000000 00000000\n", encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                verify.verify_manifest_contract(path, patch)
+
+    def test_source_only_manifest_is_not_a_concrete_addon(self):
+        with self.assertRaisesRegex(ValueError, "source-only"):
+            verify.verify_manifest_contract(HERE.parent / "manifest.example.json")
+
+    def test_contract_rejects_cadence_only_and_missing_payload(self):
+        import json
+
+        manifest = json.loads(
+            (HERE.parent / "manifest.example.json").read_text(encoding="ascii")
+        )
+        manifest["status"] = "VERIFIED"
+        manifest["verification"]["cadence"] = "VERIFIED"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "unverified contract claims"):
+                verify.verify_manifest_contract(path)
+            manifest["verification"] = {
+                claim: "VERIFIED"
+                for claim in (*verify.CONTRACT_CLAIMS, "guardedPayload")
+            } | {"payloadInput": "MISSING"}
+            path.write_text(json.dumps(manifest), encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "payload input"):
+                verify.verify_manifest_contract(path)
+
+    def test_contract_rejects_overclock_only(self):
+        import json
+
+        manifest = json.loads(
+            (HERE.parent / "manifest.example.json").read_text(encoding="ascii")
+        )
+        manifest["status"] = "VERIFIED"
+        manifest["capabilities"] = ["EMULATOR_OVERCLOCK"]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            path.write_text(json.dumps(manifest), encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "overclock"):
+                verify.verify_manifest_contract(path)
+
     def test_shared_constants(self):
         for name in (
             "ARM9_BASE",

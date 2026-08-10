@@ -6,9 +6,9 @@ import org.junit.Test
 
 class ActionReplayParserTest {
     @Test
-    fun parsesNormalizedCodeLinesAndComments() {
+    fun parsesOneNormalizedProgramAndPreservesLineBoundaries() {
         assertEquals(
-            listOf("02000000 00000001", "D0000000 00000000"),
+            "02000000 00000001\nD0000000 00000000",
             ActionReplayParser.parse(
                 """
                 # generated payload
@@ -16,6 +16,14 @@ class ActionReplayParserTest {
                 D0000000 00000000
                 """.trimIndent(),
             ),
+        )
+    }
+
+    @Test
+    fun parsesMultilineProgramAsOnePatchPayload() {
+        assertEquals(
+            "02000000 00000001\nD0000000 00000000",
+            ActionReplayParser.parse("02000000\t00000001\r\nD0000000 00000000"),
         )
     }
 

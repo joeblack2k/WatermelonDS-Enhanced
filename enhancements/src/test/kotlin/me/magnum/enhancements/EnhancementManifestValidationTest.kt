@@ -6,6 +6,53 @@ import org.junit.Test
 
 class EnhancementManifestValidationTest {
     @Test
+    fun sourceOnlyManifestMayDeclareMissingEvidence() {
+        EnhancementManifest(
+            id = "source.only",
+            name = "Source only",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+        ).also(EnhancementManifestParser::validate)
+    }
+
+    @Test
+    fun legacyManifestWithoutStatusRemainsInstallable() {
+        val legacy = EnhancementManifest(
+            id = "legacy.addon",
+            name = "Legacy",
+            version = "1.0.0",
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+        )
+
+        val parsed = EnhancementManifestParser.parse(
+            """{"id":"legacy.addon","name":"Legacy","version":"1.0.0",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"}}""".trimIndent(),
+        )
+        assertTrue(parsed.status == null)
+    }
+
+    @Test
+    fun verifiedManifestRequiresEveryClaimAndPayload() {
+        val incomplete = EnhancementManifest(
+            id = "verified.addon",
+            name = "Verified",
+            version = "1.0.0",
+            status = EnhancementStatus.VERIFIED,
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+            verification = EnhancementVerification(
+                guardedPayload = EnhancementClaim.VERIFIED,
+                payloadInput = EnhancementPayloadInput.VERIFIED,
+            ),
+        )
+        try {
+            EnhancementManifestParser.validate(incomplete)
+            fail("Expected incomplete verification to be rejected")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("every timing contract claim"))
+        }
+    }
+
+    @Test
     fun acceptsSupportedPatchApplyPairs() {
         listOf(
             EnhancementPatchType.ACTION_REPLAY to EnhancementPatchApply.RUNTIME,

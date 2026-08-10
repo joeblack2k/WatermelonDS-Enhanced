@@ -3,9 +3,10 @@ package me.magnum.enhancements
 data class EnhancementSession(
     val addOns: List<EnhancementManifest>,
 ) {
-    val capabilities: Set<EnhancementCapability> = addOns.flatMap { it.capabilities }.toSet()
-    val hardcoreCompatible: Boolean = addOns.all { it.hardcoreCompatible }
-    val runtimeInput: EnhancementRuntimeInput? = addOns
+    private val runtimeAddOns = addOns.filter { it.status != EnhancementStatus.SOURCE_ONLY }
+    val capabilities: Set<EnhancementCapability> = runtimeAddOns.flatMap { it.capabilities }.toSet()
+    val hardcoreCompatible: Boolean = runtimeAddOns.all { it.hardcoreCompatible }
+    val runtimeInput: EnhancementRuntimeInput? = runtimeAddOns
         .mapNotNull { addOn ->
             addOn.runtimeProtocol?.let { protocol ->
                 require(EnhancementCapability.RUNTIME_INPUT_PROTOCOL in addOn.capabilities) {
@@ -23,8 +24,14 @@ data class EnhancementSession(
             }
         }
         .singleOrNull()
-    val patchPlan: EnhancementPatchPlan = createPatchPlan()
-    val runtimeGuards: List<EnhancementRuntimeGuard> = addOns.flatMap { addOn ->
+    val patchResources = runtimeAddOns.flatMap { addOn ->
+        addOn.patches.map { EnhancementPatchResource(addOn.id, it) }
+    }
+    val patchPlan = EnhancementPatchPlan(
+        temporaryCopyPatches = patchResources.filter { it.patch.apply == EnhancementPatchApply.TEMPORARY_COPY },
+        runtimePatches = patchResources.filter { it.patch.apply == EnhancementPatchApply.RUNTIME },
+    )
+    val runtimeGuards: List<EnhancementRuntimeGuard> = runtimeAddOns.flatMap { addOn ->
         addOn.patches
             .filter { it.apply == EnhancementPatchApply.RUNTIME }
             .flatMap { patch ->
@@ -42,7 +49,43 @@ data class EnhancementSession(
         return capability in capabilities
     }
 
+    fun presentationState(
+        verifiedGamePatch: Boolean,
+        availableNativeCapabilities: Set<EnhancementCapability>,
+    ): EnhancementPresentationState {
+        val requested = if (hasCapability(EnhancementCapability.LAYER_AWARE_PRESENTATION)) {
+            EnhancementPresentationMode.LAYER_AWARE_PRESENTATION
+        } else {
+            EnhancementPresentationMode.NATIVE_4_3
+        }
+        val effective = if (
+            requested == EnhancementPresentationMode.LAYER_AWARE_PRESENTATION &&
+            verifiedGamePatch &&
+            EnhancementCapability.NATIVE_EMULATOR_CAPABILITY in availableNativeCapabilities
+        ) {
+            requested
+        } else {
+            EnhancementPresentationMode.NATIVE_4_3
+        }
+        return EnhancementPresentationState(requested = requested, effective = effective)
+    }
+
     fun close() = Unit
+}
+
+enum class EnhancementPresentationMode {
+    NATIVE_4_3,
+    LAYER_AWARE_PRESENTATION,
+}
+
+data class EnhancementPresentationState(
+    val requested: EnhancementPresentationMode,
+    val effective: EnhancementPresentationMode,
+)
+
+fun EnhancementPresentationState.requiresNative43Fallback(): Boolean {
+    return requested == EnhancementPresentationMode.LAYER_AWARE_PRESENTATION &&
+        effective != EnhancementPresentationMode.LAYER_AWARE_PRESENTATION
 }
 
 fun EnhancementCatalog.createSession(

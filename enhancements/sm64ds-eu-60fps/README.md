@@ -8,12 +8,18 @@ and validated. The ThorDS implementation is a bounded ARM9/overlay patch with
 player, world, animation, particle, coin-spin and cadence changes. A generic
 emulator frame limiter or ARM9 overclock is not a substitute for this patch.
 
-The finished package must contain:
+The finished package must contain all of these independently verified claims:
 
 - an exact `ASMP` revision match;
 - guarded hooks and payload reservations;
-- consistent player/world/animation timing;
-- explicit cadence and save-state behavior;
+- cadence;
+- gameplay physics;
+- timers;
+- animation;
+- particles;
+- audio continuity;
+- save-state behavior;
+- a verified revision-specific payload input;
 - fail-closed handling when any expected word differs;
 - no copyrighted ROM or user-supplied ARM image in the repository.
 
@@ -43,5 +49,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 tools/test_patch.py \
 
 This is tooling-only validation. It does not generate or install a payload for
 the addon, and it does not validate a ROM revision without the user's legal
-input images. The current gate is explicit: both image arguments are required
+input images. Cadence-only evidence, emulator overclock evidence, missing
+guards, missing payload input, or a source-only manifest are rejected as a
+concrete addon. The current gate is explicit: both image arguments are required
 and must point to existing files; `llvm-mc` must also be available on `PATH`.
+
+The acceptance gate that remains blocked is a legal, revision-matched ROM/ARM9
+and overlay input plus a real run on the target Thor hardware. Until that run
+exists, the seven claims above remain unverified and this directory is not a
+release addon.
