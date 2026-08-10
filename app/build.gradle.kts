@@ -546,6 +546,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":enhancements"))
     val gitHubImplementation by configurations
 
     implementation(projects.masterswitch)

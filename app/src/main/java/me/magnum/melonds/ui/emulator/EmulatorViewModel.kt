@@ -127,6 +127,7 @@ import me.magnum.melonds.domain.repositories.SaveStatesRepository
 import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.domain.services.EmulatorManager
 import me.magnum.melonds.impl.ShaderCompileTimeStore
+import me.magnum.melonds.impl.EnhancementCatalogLoader
 import me.magnum.melonds.impl.emulator.EmulatorSession
 import me.magnum.melonds.impl.emulator.LeaderboardTrackerUpdateLogLimiter
 import me.magnum.melonds.impl.emulator.debug.RendererDebugCaptureLogger
@@ -177,6 +178,9 @@ import me.magnum.melonds.impl.retroachievements.offline.SmartSyncSkipReason
 import me.magnum.melonds.impl.retroachievements.offline.SmartSyncEngine
 import me.magnum.melonds.impl.layout.UILayoutProvider
 import me.magnum.melonds.impl.system.NetworkStatusProvider
+import me.magnum.enhancements.EnhancementRomIdentity
+import me.magnum.enhancements.EnhancementSession
+import me.magnum.enhancements.createSession
 import me.magnum.melonds.ui.emulator.component.RetroAchievementsSubmissionHandler
 import me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption
 import me.magnum.melonds.ui.emulator.model.RumbleEvent
@@ -257,6 +261,7 @@ class EmulatorViewModel @Inject constructor(
     private val emulatorSession: EmulatorSession,
     private val retroAchievementsSubmissionHandler: RetroAchievementsSubmissionHandler,
     private val shaderCompileTimeStore: ShaderCompileTimeStore,
+    private val enhancementCatalogLoader: EnhancementCatalogLoader,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -278,6 +283,7 @@ class EmulatorViewModel @Inject constructor(
 
     private var raBootstrapJob: Job? = null
     private var raSessionJob: Job? = null
+    private var activeEnhancementSession: EnhancementSession? = null
 
     private enum class RetroAchievementsNetworkMode {
         ONLINE_LIVE,
@@ -739,6 +745,22 @@ class EmulatorViewModel @Inject constructor(
             _emulatorState.value = EmulatorState.LoadingRom()
             currentRom = rom
             activeRomConfig.value = rom
+            val romInfo = getRomInfo(rom)
+            activeEnhancementSession = romInfo?.let {
+                enhancementCatalogLoader.load().createSession(
+                    identity = EnhancementRomIdentity(
+                        gameCode = it.gameCode,
+                        headerChecksum = it.headerChecksumString(),
+                        sha256 = "",
+                    ),
+                    enabledIds = rom.config.enabledEnhancements,
+                )
+            } ?: run {
+                require(rom.config.enabledEnhancements.isEmpty()) {
+                    "Enhanced add-ons require a readable ROM header"
+                }
+                null
+            }
             val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(rom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
                 retroAchievementsEndpointProvider.beginSession()
@@ -802,7 +824,7 @@ class EmulatorViewModel @Inject constructor(
                 )
             }
 
-            val cheats = getRomInfo(rom)?.let { getRomEnabledCheats(it) } ?: emptyList()
+            val cheats = romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()
             confirmRetroArchShaderCompile(rom.config)
             val result = emulatorManager.loadRom(rom, cheats)
             when (result) {

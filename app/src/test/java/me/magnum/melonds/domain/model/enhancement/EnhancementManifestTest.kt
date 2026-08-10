@@ -1,8 +1,15 @@
-package me.magnum.melonds.domain.model.enhancement
+package me.magnum.enhancements
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import me.magnum.enhancements.EnhancementCapability
+import me.magnum.enhancements.EnhancementCatalog
+import me.magnum.enhancements.EnhancementManifest
+import me.magnum.enhancements.EnhancementManifestParser
+import me.magnum.enhancements.EnhancementMatch
+import me.magnum.enhancements.EnhancementRomIdentity
+import me.magnum.enhancements.createSession
 import me.magnum.melonds.impl.dtos.rom.RomConfigDto
 import me.magnum.melonds.domain.model.rom.config.RuntimeConsoleType
 import me.magnum.melonds.domain.model.rom.config.RuntimeMicSource
