@@ -32,6 +32,12 @@ when its manifest matches the ROM identity read from the cartridge header.
 }
 ```
 
+Installed add-ons use a canonical filesystem layout:
+`<Enhancements root>/<manifest.id>/manifest.json`. The package directory name
+must exactly equal the manifest `id`. Discovery checks only direct, visible
+package directories under each configured root; nested manifests and
+dot-prefixed staging directories are ignored.
+
 The manifest is deliberately broader than an Action Replay file. An add-on
 may combine controller-axis ownership, a native emulator capability, a
 versioned runtime input protocol, guarded runtime code, or an IPS/BPS patch

@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import me.magnum.enhancements.EnhancementCatalog
-import me.magnum.enhancements.EnhancementManifestParser
 import me.magnum.enhancements.EnhancementManifest
 import me.magnum.enhancements.EnhancementPackageInstaller
 import java.io.File
@@ -27,16 +26,7 @@ class EnhancementCatalogLoader @Inject constructor(
             File(context.filesDir, "Enhancements"),
             context.getExternalFilesDir(null)?.let { File(it, "Enhancements") },
         )
-        val manifests = roots.asSequence()
-            .filter(File::isDirectory)
-            .flatMap { root ->
-                root.walkTopDown()
-                    .filter { it.isFile && it.name == "manifest.json" }
-                    .asSequence()
-            }
-            .map { EnhancementManifestParser.parse(it.readText()) }
-            .toList()
-        return EnhancementCatalog(manifests)
+        return EnhancementCatalog.loadFromRoots(roots)
     }
 
     fun readFiles(manifest: me.magnum.enhancements.EnhancementManifest, paths: Set<String>): Map<String, ByteArray> {

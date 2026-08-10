@@ -8,6 +8,9 @@ data class EnhancementSession(
     val runtimeInput: EnhancementRuntimeInput? = addOns
         .mapNotNull { addOn ->
             addOn.runtimeProtocol?.let { protocol ->
+                require(EnhancementCapability.RUNTIME_INPUT_PROTOCOL in addOn.capabilities) {
+                    "Runtime input protocol requires its capability"
+                }
                 EnhancementRuntimeInput(
                     protocol = protocol,
                     axisXCode = requireNotNull(addOn.runtimeAxisXCode),
@@ -59,10 +62,28 @@ fun EnhancementCatalog.createSession(
     require(selected.flatMap { it.requiresCapabilities }.all { it in selected.flatMap { addOn -> addOn.capabilities } }) {
         "Enabled enhancements have unsatisfied capability requirements"
     }
-    require(selected.count { it.runtimeProtocol != null } <= 1) {
-        "Enabled enhancements cannot declare more than one runtime protocol owner"
+    require(selected.count { EnhancementCapability.CONTROLLER_AXIS_OWNER in it.capabilities } <= 1) {
+        "Enabled enhancements cannot declare more than one controller axis owner"
+    }
+    require(selected.none {
+        it.runtimeProtocol != null &&
+            EnhancementCapability.RUNTIME_INPUT_PROTOCOL !in it.capabilities
+    }) {
+        "Runtime input protocol requires its capability"
+    }
+    val runtimeGuardAddresses = selected.flatMap { addOn ->
+        addOn.patches
+            .filter { it.apply == EnhancementPatchApply.RUNTIME }
+            .flatMap { it.expectedOriginalWords.keys.map(::parseRuntimeAddress) }
+    }
+    require(runtimeGuardAddresses.size == runtimeGuardAddresses.toSet().size) {
+        "Enabled enhancements cannot guard the same runtime address more than once"
     }
     return EnhancementSession(selected)
+}
+
+private fun parseRuntimeAddress(address: String): Long {
+    return address.removePrefix("0x").removePrefix("0X").toLong(16)
 }
 
 interface EnhancementRuntime {

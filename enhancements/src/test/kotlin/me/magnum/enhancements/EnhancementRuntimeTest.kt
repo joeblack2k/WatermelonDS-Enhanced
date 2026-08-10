@@ -9,18 +9,81 @@ class EnhancementRuntimeTest {
     private val identity = EnhancementRomIdentity("ASMP", "12345678", "")
 
     @Test
-    fun rejectsMatchingDuplicateRuntimeProtocolOwners() {
-        val ownerA = manifest("owner.a")
-        val ownerB = manifest("owner.b")
+    fun rejectsMatchingDuplicateAxisOwnersWithoutRuntimeProtocols() {
+        val ownerA = manifest("owner.a", protocol = null, axisOwner = true)
+        val ownerB = manifest("owner.b", protocol = null, axisOwner = true)
         val catalog = EnhancementCatalog(listOf(ownerA, ownerB))
 
         try {
             catalog.createSession(identity, setOf(ownerA.id, ownerB.id))
         } catch (error: IllegalArgumentException) {
-            assertTrue(error.message.orEmpty().contains("more than one runtime protocol owner"))
+            assertTrue(error.message.orEmpty().contains("controller axis owner"))
             return
         }
-        throw AssertionError("Expected duplicate runtime protocol owners to be rejected")
+        throw AssertionError("Expected duplicate controller axis owners to be rejected")
+    }
+
+    @Test
+    fun rejectsMatchingDuplicateAxisOwnersWithOneRuntimeProtocol() {
+        val ownerA = manifest("owner.a", protocol = "camera-v1")
+        val ownerB = manifest("owner.b", protocol = null, axisOwner = true)
+
+        assertRejects("controller axis owner") {
+            EnhancementCatalog(listOf(ownerA, ownerB)).createSession(identity, setOf(ownerA.id, ownerB.id))
+        }
+    }
+
+    @Test
+    fun rejectsDuplicateRuntimeGuardAddressWithinAddon() {
+        val addOn = manifest(
+            id = "patches",
+            protocol = null,
+            axisOwner = false,
+            patches = listOf(runtimePatch("0x02000010", "first.ards"), runtimePatch("0x02000010", "second.ards")),
+        )
+
+        assertRejects("guard the same runtime address") {
+            EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+        }
+    }
+
+    @Test
+    fun rejectsDuplicateRuntimeGuardAddressAcrossAddons() {
+        val addOnA = manifest("patch.a", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x02000010")))
+        val addOnB = manifest("patch.b", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x02000010")))
+
+        assertRejects("guard the same runtime address") {
+            EnhancementCatalog(listOf(addOnA, addOnB)).createSession(identity, setOf(addOnA.id, addOnB.id))
+        }
+    }
+
+    @Test
+    fun rejectsMixedCaseDuplicateRuntimeGuardAddressAcrossAddons() {
+        val addOnA = manifest("patch.a", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x020000AF")))
+        val addOnB = manifest("patch.b", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x020000af")))
+
+        assertRejects("guard the same runtime address") {
+            EnhancementCatalog(listOf(addOnA, addOnB)).createSession(identity, setOf(addOnA.id, addOnB.id))
+        }
+    }
+
+    @Test
+    fun composesDistinctRuntimeGuardAddresses() {
+        val addOnA = manifest("patch.a", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x02000010")))
+        val addOnB = manifest("patch.b", protocol = null, axisOwner = false, patches = listOf(runtimePatch("0x02000014")))
+
+        val session = EnhancementCatalog(listOf(addOnA, addOnB))
+            .createSession(identity, setOf(addOnA.id, addOnB.id))
+
+        assertEquals(listOf(0x02000010L, 0x02000014L), session.runtimeGuards.map { it.address })
+    }
+
+    @Test
+    fun preservesEmptySession() {
+        val session = EnhancementCatalog(emptyList()).createSession(identity, emptySet())
+
+        assertEquals(emptyList<EnhancementManifest>(), session.addOns)
+        assertEquals(null, session.runtimeInput)
     }
 
     @Test
@@ -53,24 +116,48 @@ class EnhancementRuntimeTest {
         assertFalse(session.runtimeInput == null)
     }
 
+    @Test
+    fun preservesSingleNonRuntimeAddon() {
+        val addOn = manifest("plain", protocol = null, axisOwner = false)
+
+        val session = EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+
+        assertEquals(listOf(addOn), session.addOns)
+        assertEquals(null, session.runtimeInput)
+    }
+
+    @Test
+    fun rejectsRuntimeProtocolWithoutCapability() {
+        val addOn = manifest("invalid", protocol = "camera-v1", axisOwner = true).copy(
+            capabilities = setOf(EnhancementCapability.CONTROLLER_AXIS_OWNER),
+        )
+
+        assertRejects("Runtime input protocol requires its capability") {
+            EnhancementCatalog(listOf(addOn)).createSession(identity, setOf(addOn.id))
+        }
+    }
+
     private fun manifest(
         id: String,
-        protocol: String = "camera-v1",
+        protocol: String? = "camera-v1",
         axisX: Int = 1,
         axisY: Int = 2,
         invertX: Boolean = false,
         invertY: Boolean = false,
         deadzone: Float = 0.12f,
         sensitivity: Float = 1f,
+        axisOwner: Boolean = true,
+        patches: List<EnhancementPatch> = emptyList(),
     ) = EnhancementManifest(
         id = id,
         name = id,
         version = "1.0.0",
         match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
-        capabilities = setOf(
-            EnhancementCapability.CONTROLLER_AXIS_OWNER,
-            EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
-        ),
+        capabilities = buildSet {
+            if (axisOwner) add(EnhancementCapability.CONTROLLER_AXIS_OWNER)
+            if (protocol != null) add(EnhancementCapability.RUNTIME_INPUT_PROTOCOL)
+        },
+        patches = patches,
         runtimeProtocol = protocol,
         runtimeAxisXCode = axisX,
         runtimeAxisYCode = axisY,
@@ -79,4 +166,21 @@ class EnhancementRuntimeTest {
         runtimeDeadzone = deadzone,
         runtimeSensitivity = sensitivity,
     )
+
+    private fun runtimePatch(address: String, file: String = "$address.ards") = EnhancementPatch(
+        type = EnhancementPatchType.ACTION_REPLAY,
+        file = file,
+        provenance = "test",
+        expectedOriginalWords = mapOf(address to "0x00000000"),
+    )
+
+    private fun assertRejects(message: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains(message))
+            return
+        }
+        throw AssertionError("Expected IllegalArgumentException containing: $message")
+    }
 }

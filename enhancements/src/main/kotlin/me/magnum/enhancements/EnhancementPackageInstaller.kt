@@ -2,6 +2,7 @@ package me.magnum.enhancements
 
 import java.io.File
 import java.io.InputStream
+import java.util.HashSet
 import java.util.UUID
 import java.util.zip.ZipInputStream
 
@@ -27,6 +28,7 @@ class EnhancementPackageInstaller(
             require(packageContents.renameTo(packageDirectory)) {
                 "Unable to install enhancement package"
             }
+            staging.deleteRecursively()
             return manifest
         } catch (error: Throwable) {
             staging.deleteRecursively()
@@ -38,14 +40,12 @@ class EnhancementPackageInstaller(
         ZipInputStream(input.buffered()).use { zip ->
             var entries = 0
             var extractedBytes = 0L
+            val paths = HashSet<String>()
             while (true) {
                 val entry = zip.nextEntry ?: break
                 require(++entries <= MAX_ENTRIES) { "Enhancement package has too many files" }
-                require(entry.compressedSize < MAX_ENTRY_BYTES || entry.compressedSize < 0) {
-                    "Enhancement package entry is too large"
-                }
-                val relativePath = entry.name.replace('\\', '/')
-                require(isSafeRelativePath(relativePath)) { "Unsafe enhancement package path" }
+                val relativePath = canonicalRelativePath(entry.name)
+                require(paths.add(relativePath)) { "Enhancement package contains duplicate paths" }
                 val destination = File(staging, relativePath)
                 val stagingPath = staging.canonicalPath + File.separator
                 require(destination.canonicalPath.startsWith(stagingPath)) {
@@ -59,9 +59,21 @@ class EnhancementPackageInstaller(
                 }
                 destination.parentFile?.mkdirs()
                 destination.outputStream().use { output ->
-                    val copied = zip.copyTo(output, BUFFER_SIZE)
-                    extractedBytes += copied
-                    require(extractedBytes <= MAX_TOTAL_BYTES) { "Enhancement package is too large" }
+                    var entryBytes = 0L
+                    val buffer = ByteArray(BUFFER_SIZE)
+                    while (true) {
+                        val read = zip.read(buffer)
+                        if (read < 0) break
+                        entryBytes += read
+                        extractedBytes += read
+                        require(entryBytes <= MAX_ENTRY_BYTES) {
+                            "Enhancement package entry is too large"
+                        }
+                        require(extractedBytes <= MAX_TOTAL_BYTES) {
+                            "Enhancement package is too large"
+                        }
+                        output.write(buffer, 0, read)
+                    }
                 }
             }
         }
@@ -81,11 +93,16 @@ class EnhancementPackageInstaller(
         private const val MAX_ENTRY_BYTES = 16L * 1024 * 1024
         private const val MAX_TOTAL_BYTES = 64L * 1024 * 1024
 
-        private fun isSafeRelativePath(path: String): Boolean {
-            return path.isNotBlank() &&
-                !path.startsWith("/") &&
-                !path.contains(':') &&
-                ".." !in path.split('/')
+        private fun canonicalRelativePath(rawPath: String): String {
+            val path = rawPath.replace('\\', '/')
+            require(path.isNotBlank() && !path.startsWith('/') && !path.contains(':')) {
+                "Unsafe enhancement package path"
+            }
+            val segments = path.split('/').filter { it.isNotEmpty() && it != "." }
+            require(segments.isNotEmpty() && ".." !in segments) {
+                "Unsafe enhancement package path"
+            }
+            return segments.joinToString("/")
         }
     }
 }
