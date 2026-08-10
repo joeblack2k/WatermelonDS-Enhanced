@@ -1494,6 +1494,11 @@ class EmulatorActivity : AppCompatActivity() {
             return
         }
         updateDisplays()
+        connectedControllerManager.onControllerRemoved = {
+            if (::nativeInputListener.isInitialized) {
+                nativeInputListener.neutralizeTransientInputs()
+            }
+        }
         getSystemService<DisplayManager>()?.registerDisplayListener(displayListener, null)
         getSystemService<InputManager>()?.registerInputDeviceListener(connectedControllerManager, null)
         connectedControllerManager.startTrackingControllers()
@@ -3958,6 +3963,7 @@ class EmulatorActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        nativeInputListener.neutralizeTransientInputs()
         cancelStartupPresentationRefreshes()
         stopShaderDiagnosticsPolling()
         frontendInputHandler.clearFastForwardHold()
@@ -3980,6 +3986,8 @@ class EmulatorActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        nativeInputListener.neutralizeTransientInputs()
+        connectedControllerManager.onControllerRemoved = null
         cancelStartupPresentationRefreshes()
         getSystemService<DisplayManager>()?.unregisterDisplayListener(displayListener)
         getSystemService<InputManager>()?.unregisterInputDeviceListener(connectedControllerManager)

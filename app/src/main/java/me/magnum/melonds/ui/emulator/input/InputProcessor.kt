@@ -148,6 +148,17 @@ class InputProcessor(
         return processSlot2AnalogFromMotionEvent(motionEvent)
     }
 
+    override fun neutralizeTransientInputs() {
+        MelonEmulator.setSlot2AnalogInput(0f, 0f)
+        if (runtimeInput != null) {
+            sendCameraState(requireNotNull(cameraProtocol).neutral())
+        }
+        slot2DigitalLeftPressed = false
+        slot2DigitalRightPressed = false
+        slot2DigitalUpPressed = false
+        slot2DigitalDownPressed = false
+    }
+
     private fun dispatchInputPressed(input: Input, fromController: Boolean) {
         updateSlot2DigitalFallback(input, pressed = true, fromController = fromController)
         if (input.isSystemInput) {

@@ -20,6 +20,8 @@ import me.magnum.melonds.ui.emulator.model.ConnectedControllersState
 
 class ConnectedControllerManager : InputManager.InputDeviceListener {
 
+    var onControllerRemoved: (() -> Unit)? = null
+
     private var coroutineScope: CoroutineScope? = null
     private val currentControllerConfiguration = MutableStateFlow<ControllerConfiguration?>(null)
 
@@ -61,6 +63,7 @@ class ConnectedControllerManager : InputManager.InputDeviceListener {
     }
 
     override fun onInputDeviceRemoved(deviceId: Int) {
+        onControllerRemoved?.invoke()
         _managedControllers.update {
             val deviceIndex = it.indexOfFirst { it.id == deviceId }
             if (deviceIndex >= 0) {
