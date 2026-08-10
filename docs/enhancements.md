@@ -2,7 +2,7 @@
 
 Enhanced add-ons are opt-in packages for game-specific improvements that cannot
 be represented by normal emulator settings alone. An add-on is selected only
-when its manifest matches the exact ROM identity.
+when its manifest matches the ROM identity read from the cartridge header.
 
 ## Manifest
 
@@ -14,7 +14,7 @@ when its manifest matches the exact ROM identity.
   "version": "1.0.0",
   "match": {
     "gameCode": "ASMP",
-    "sha256": ["<exact ROM SHA-256>"]
+    "headerChecksum": "12345678"
   },
   "capabilities": [
     "CONTROLLER_AXIS_OWNER",
@@ -44,7 +44,8 @@ state on reset, pause, save-state load, controller disconnect, and teardown.
 
 ## Safety rules
 
-- Match game code and an exact SHA-256; filenames are never sufficient.
+- Match game code and header identity data; filenames are never sufficient.
+- Allow an optional SHA-256 as an additional guard for revisions that need it.
 - Reject unsafe paths and unknown manifest fields.
 - Keep the original ROM untouched.
 - Validate patch bounds and expected original values before applying runtime code.

@@ -66,7 +66,9 @@ object EnhancementManifestParser {
         require(manifest.id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid enhancement id" }
         require(manifest.name.isNotBlank() && manifest.version.isNotBlank()) { "Missing enhancement metadata" }
         require(manifest.match.gameCode.length == 4) { "Game code must contain four characters" }
-        require(manifest.match.sha256.isNotEmpty()) { "Enhancement must declare an exact ROM SHA-256" }
+        require(manifest.match.headerChecksum != null || manifest.match.sha256.isNotEmpty()) {
+            "Enhancement must declare a ROM header checksum or SHA-256"
+        }
         require(manifest.match.sha256.all { it.matches(Regex("[0-9a-fA-F]{64}")) }) { "Invalid ROM SHA-256" }
         require(manifest.patches.map { it.file }.distinct().size == manifest.patches.size) {
             "Duplicate enhancement patch file"

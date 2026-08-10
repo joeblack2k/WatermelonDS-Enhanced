@@ -13,16 +13,16 @@ class EnhancementManifestTest {
             id = "mario-camera",
             name = "Mario camera",
             version = "1.0.0",
-            match = EnhancementMatch("ASMP", sha256 = setOf(hash)),
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
             capabilities = setOf(
                 EnhancementCapability.CONTROLLER_AXIS_OWNER,
                 EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
             ),
         )
 
-        assertTrue(manifest.matches(EnhancementRomIdentity("ASMP", null, hash)))
-        assertTrue(!manifest.matches(EnhancementRomIdentity("ASMP", null, hash.dropLast(1) + "0")))
-        assertTrue(!manifest.matches(EnhancementRomIdentity("XXXX", null, hash)))
+        assertTrue(manifest.matches(EnhancementRomIdentity("ASMP", "12345678", "")))
+        assertTrue(!manifest.matches(EnhancementRomIdentity("ASMP", "87654321", "")))
+        assertTrue(!manifest.matches(EnhancementRomIdentity("XXXX", "12345678", "")))
     }
 
     @Test
@@ -34,7 +34,7 @@ class EnhancementManifestTest {
               "version": "1.0.0",
               "match": {
                 "gameCode": "ASMP",
-                "sha256": ["$hash"]
+                "headerChecksum": "12345678"
               },
               "patches": [
                 {"type": "IPS", "file": "../camera.ips"}
@@ -57,12 +57,12 @@ class EnhancementManifestTest {
             id = "mario-camera",
             name = "Mario camera",
             version = "1.0.0",
-            match = EnhancementMatch("ASMP", sha256 = setOf(hash)),
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
         )
         val catalog = EnhancementCatalog(listOf(manifest))
 
-        assertEquals(listOf(manifest), catalog.matching(EnhancementRomIdentity("ASMP", null, hash)))
-        assertTrue(catalog.matching(EnhancementRomIdentity("ASMP", null, hash.reversed())).isEmpty())
+        assertEquals(listOf(manifest), catalog.matching(EnhancementRomIdentity("ASMP", "12345678", "")))
+        assertTrue(catalog.matching(EnhancementRomIdentity("ASMP", "87654321", "")).isEmpty())
     }
 
     @Test
@@ -78,7 +78,7 @@ class EnhancementManifestTest {
         var rejected = false
         try {
             catalog.createSession(
-                EnhancementRomIdentity("XXXX", null, hash),
+                EnhancementRomIdentity("XXXX", "12345678", ""),
                 setOf("mario-camera"),
             )
         } catch (_: IllegalArgumentException) {
