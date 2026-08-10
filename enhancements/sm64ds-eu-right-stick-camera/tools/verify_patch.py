@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independently verify a generated ThorDS camera Action Replay text file."""
+"""Independently verify a generated Enhanced camera Action Replay text file."""
 
 from __future__ import annotations
 

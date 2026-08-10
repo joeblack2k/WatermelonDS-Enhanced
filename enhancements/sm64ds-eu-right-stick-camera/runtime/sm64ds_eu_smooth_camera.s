@@ -2,7 +2,7 @@
 	.arm
 
 	/*
-	 * ThorDS Smooth Orbit Camera v1 trampoline.
+	 * Enhanced Smooth Orbit Camera v1 trampoline.
 	 *
 	 * The hook is installed at the generic camera update entry. It preserves
 	 * the original prologue, accumulates smooth yaw in camera+0x184, then
@@ -10,9 +10,9 @@
 	 * verified target-bridge words make the active generic camera mode include
 	 * that offset in its original ApproachAngle/position/collision path.
 	 */
-	.global thords_smooth_camera_hook
-	.type thords_smooth_camera_hook, %function
-thords_smooth_camera_hook:
+	.global enhanced_smooth_camera_hook
+	.type enhanced_smooth_camera_hook, %function
+enhanced_smooth_camera_hook:
 	.word	0xE92D4FF0
 	.word	0xE24DDF67
 	.word	0xE1A08000
@@ -64,11 +64,11 @@ thords_smooth_camera_hook:
 	.word	0x02005060
 .L_original_continue:
 	.word	0x02009e7c
-	.size	thords_smooth_camera_hook, .-thords_smooth_camera_hook
+	.size	enhanced_smooth_camera_hook, .-enhanced_smooth_camera_hook
 
-	.global thords_pitch_bridge
-	.type	thords_pitch_bridge, %function
-thords_pitch_bridge:
+	.global enhanced_pitch_bridge
+	.type	enhanced_pitch_bridge, %function
+enhanced_pitch_bridge:
 	strh	r1, [r0, #0x7c]
 	ldr	r0, .L_pitch_protocol
 	ldrsh	r1, [r0, #0x02]
@@ -88,4 +88,4 @@ thords_pitch_bridge:
 	.word	0x00040000
 .L_pitch_continue:
 	.word	0x0200a7ac
-	.size	thords_pitch_bridge, .-thords_pitch_bridge
+	.size	enhanced_pitch_bridge, .-enhanced_pitch_bridge
