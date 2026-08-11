@@ -9,6 +9,19 @@ import java.security.MessageDigest
 
 class EnhancementCatalogTest {
     @Test
+    fun installableMatchesExcludeSourceOnlyManifests() {
+        val sourceOnly = EnhancementManifestParser.parse(manifest("source.only"))
+            .copy(status = EnhancementStatus.SOURCE_ONLY)
+        val installable = EnhancementManifestParser.parse(manifest("installable"))
+        val catalog = EnhancementCatalog(listOf(sourceOnly, installable))
+
+        assertEquals(
+            listOf(installable),
+            catalog.installableMatching(EnhancementRomIdentity("ASMP", "12345678", "")),
+        )
+    }
+
+    @Test
     fun directoryCatalogRejectsTamperedHashedPatch() {
         val root = Files.createTempDirectory("enhancements-hash").toFile()
         val packageRoot = File(root, "hashed.addon").also { it.mkdirs() }

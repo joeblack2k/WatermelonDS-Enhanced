@@ -1,12 +1,14 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "sm64ds.eu.right-stick-camera",
   "name": "SM64DS EU right-stick camera",
   "version": "1.0.0",
   "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
   "match": {
     "gameCode": "ASMP",
-    "headerChecksum": "TODO_FROM_SUPPORTED_ROM"
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
   },
   "capabilities": [
     "CONTROLLER_AXIS_OWNER",

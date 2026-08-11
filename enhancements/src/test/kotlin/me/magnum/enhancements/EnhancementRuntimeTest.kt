@@ -3,6 +3,7 @@ package me.magnum.enhancements
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EnhancementRuntimeTest {
@@ -224,17 +225,14 @@ class EnhancementRuntimeTest {
     }
 
     @Test
-    fun sourceOnlyAddonCannotProvideRuntimeCapabilities() {
+    fun sourceOnlyAddonCannotBeEnabled() {
         val sourceOnly = manifest("source.only", protocol = null, axisOwner = false).copy(
             status = EnhancementStatus.SOURCE_ONLY,
             capabilities = setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION),
         )
-        val session = EnhancementCatalog(listOf(sourceOnly))
-            .createSession(identity, setOf(sourceOnly.id))
-
-        assertEquals(emptySet<EnhancementCapability>(), session.capabilities)
-        assertEquals(null, session.runtimeInput)
-        assertEquals(emptyList<EnhancementPatchResource>(), session.patchPlan.runtimePatches)
+        assertThrows(IllegalArgumentException::class.java) {
+            EnhancementCatalog(listOf(sourceOnly)).createSession(identity, setOf(sourceOnly.id))
+        }
     }
 
     private fun manifest(

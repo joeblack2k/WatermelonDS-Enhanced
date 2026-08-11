@@ -763,7 +763,7 @@ class EmulatorViewModel @Inject constructor(
             val catalog = enhancementCatalogLoader.load()
             val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
             activeEnhancementSession = identity?.let {
-                val matchingIds = catalog.matching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
+                val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
                 val reconciled = rom.config.enabledEnhancements.intersect(matchingIds)
                 if (reconciled != rom.config.enabledEnhancements) {
                     val config = rom.config.copy(enabledEnhancements = reconciled)

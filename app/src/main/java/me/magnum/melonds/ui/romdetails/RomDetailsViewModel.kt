@@ -120,7 +120,7 @@ class RomDetailsViewModel @Inject constructor(
                             .let { processor ->
                                 val catalog = enhancementCatalogLoader.load()
                                 enhancementRomIdentityResolver.resolve(_rom.value, catalog)
-                                    ?.let { catalog.matching(it).map { manifest -> manifest.id } }
+                                    ?.let { catalog.installableMatching(it).map { manifest -> manifest.id } }
                             }
                             .orEmpty()
                     },

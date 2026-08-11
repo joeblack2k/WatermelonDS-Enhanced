@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "id": "sm64ds.eu.60fps",
   "name": "SM64DS EU 60 FPS",
   "version": "0.1.0",
@@ -7,7 +7,8 @@
   "status": "SOURCE_ONLY",
   "match": {
     "gameCode": "ASMP",
-    "headerChecksum": "TODO_FROM_SUPPORTED_ROM"
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
   },
   "capabilities": [
     "RUNTIME_CODE_PATCH"

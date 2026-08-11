@@ -17,6 +17,10 @@ class EnhancementCatalog(manifests: List<EnhancementManifest>) {
         return manifests.filter { it.matches(identity) }
     }
 
+    fun installableMatching(identity: EnhancementRomIdentity): List<EnhancementManifest> {
+        return matching(identity).filter(EnhancementManifest::isInstallable)
+    }
+
     fun hasShaGuard(gameCode: String, headerChecksum: String?): Boolean {
         return manifests.any {
             it.match.gameCode == gameCode &&

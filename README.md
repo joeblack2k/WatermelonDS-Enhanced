@@ -46,6 +46,20 @@ Everything from the upstream Android port, plus:
 
 The core is kept in sync with melonDS 1.0 and later upstream changes.
 
+# Fork maintenance
+
+The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
+upstream is `SapphireRhodonite/melonDS-android`; the fork's base is commit
+`1e0a463d` (`watermelon-base`) and the current enhancement head is
+`b0814823`. The `melonDS-android-lib` submodule is sourced from
+`joeblack2k/melonDS-android` on the public branch
+`codex/slot2-camera-contract`, which exposes the baseline gitlink
+`e4022d7e7ada535ff5ea9d087db389cc46e8da62`. The old
+`joeblack2k/melonDS-android` submodule path is stale and is not used.
+
+For the bounded update procedure and the exact reference model, see
+[`docs/FORK_MAINTENANCE.md`](docs/FORK_MAINTENANCE.md).
+
 # Missing Features
 *  Local Multiplayer
 *  DSi SD card support

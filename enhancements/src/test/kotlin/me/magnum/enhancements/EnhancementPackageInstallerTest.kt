@@ -14,6 +14,24 @@ import org.junit.Test
 
 class EnhancementPackageInstallerTest {
     @Test
+    fun rejectsSourceOnlyPackageBeforeInstallation() {
+        val root = Files.createTempDirectory("enhancements-source-only").toFile()
+        val manifest = """{
+            "id": "source.only",
+            "name": "Source only",
+            "version": "1.0.0",
+            "status": "SOURCE_ONLY",
+            "match": {"gameCode": "ASMP", "headerChecksum": "12345678"}
+        }""".trimIndent()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            EnhancementPackageInstaller(root).install(zipOf("bundle/manifest.json" to manifest))
+        }
+        assertFalse(File(root, "source.only").exists())
+        root.deleteRecursively()
+    }
+
+    @Test
     fun rejectsTamperedPatchWhenManifestHashDoesNotMatch() {
         val root = Files.createTempDirectory("enhancements-hash").toFile()
         val manifest = """{

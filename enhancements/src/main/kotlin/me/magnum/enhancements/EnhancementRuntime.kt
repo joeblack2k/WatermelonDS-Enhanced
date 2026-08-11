@@ -92,7 +92,7 @@ fun EnhancementCatalog.createSession(
     identity: EnhancementRomIdentity,
     enabledIds: Set<String>,
 ): EnhancementSession {
-    val matching = matching(identity)
+    val matching = installableMatching(identity)
     require(enabledIds.all { id -> matching.any { it.id == id } }) {
         "Enabled enhancement does not match the ROM identity"
     }

@@ -34,6 +34,8 @@ enum class EnhancementStatus {
     VERIFIED,
 }
 
+fun EnhancementManifest.isInstallable(): Boolean = status != EnhancementStatus.SOURCE_ONLY
+
 @Serializable
 enum class EnhancementClaim {
     VERIFIED,

@@ -19,6 +19,9 @@ class EnhancementPackageInstaller(
             extractSafely(input, staging)
             val manifestFile = findManifest(staging)
             val manifest = EnhancementManifestParser.parse(manifestFile.readText())
+            require(manifest.isInstallable()) {
+                "Source-only enhancements cannot be installed"
+            }
             val packageDirectory = File(root, manifest.id)
             require(replace || !packageDirectory.exists()) { "Enhancement is already installed" }
             val packageContents = manifestFile.parentFile ?: staging

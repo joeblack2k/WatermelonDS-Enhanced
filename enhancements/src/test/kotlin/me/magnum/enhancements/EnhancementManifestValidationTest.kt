@@ -1,10 +1,28 @@
 package me.magnum.enhancements
 
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Path
 
 class EnhancementManifestValidationTest {
+    @Test
+    fun allExampleManifestsParseWithTheProductionParser() {
+        val root = listOf(Path.of("enhancements"), Path.of("."))
+            .map { it.resolve("sm64ds-eu-60fps") }
+            .first { Files.isDirectory(it) }
+            .parent
+        val examples = Files.walk(root).use { paths ->
+            paths.filter { it.fileName.toString() == "manifest.example.json" }.toList()
+        }
+
+        assertEquals(3, examples.size)
+        examples.forEach { path ->
+            EnhancementManifestParser.parse(Files.readString(path))
+        }
+    }
     @Test
     fun sourceOnlyManifestMayDeclareMissingEvidence() {
         EnhancementManifest(
