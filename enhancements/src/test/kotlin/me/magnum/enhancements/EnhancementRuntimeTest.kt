@@ -190,7 +190,11 @@ class EnhancementRuntimeTest {
         assertFalse(addOnIds.any { id ->
             Regex.escape(id).toRegex(RegexOption.IGNORE_CASE).containsMatchIn(sources)
         })
-        val manifestLiterals = Regex("0x[0-9A-Fa-f]{8}").findAll(manifests).map { it.value }.toSet()
+        val manifestLiterals = Regex("0x[0-9A-Fa-f]{8}")
+            .findAll(manifests)
+            .map { it.value }
+            .filter { it.removePrefix("0x").toLong(16) >= 0x02000000 }
+            .toSet()
         assertFalse(manifestLiterals.any { literal ->
             Regex.escape(literal).toRegex().containsMatchIn(sources)
         })

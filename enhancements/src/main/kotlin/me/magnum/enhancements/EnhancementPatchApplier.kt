@@ -13,9 +13,9 @@ object EnhancementPatchApplier {
             require(++records <= MAX_PATCH_RECORDS) { "Too many IPS records" }
             if (patch[cursor] == 'E'.code.toByte() && patch[cursor + 1] == 'O'.code.toByte() &&
                 patch[cursor + 2] == 'F'.code.toByte()) {
-                require(cursor + 3 == patch.size || cursor + 5 == patch.size) { "Trailing IPS data" }
-                if (cursor + 5 == patch.size) {
-                    require(readU16(patch, cursor + 3) <= MAX_ROM_SIZE) { "IPS final size is too large" }
+                require(cursor + 3 == patch.size || cursor + 6 == patch.size) { "Trailing IPS data" }
+                if (cursor + 6 == patch.size) {
+                    require(readU24(patch, cursor + 3) <= MAX_ROM_SIZE) { "IPS final size is too large" }
                 }
                 return
             }
@@ -81,9 +81,11 @@ object EnhancementPatchApplier {
             require(++records <= MAX_PATCH_RECORDS) { "Too many IPS records" }
             if (patch[cursor] == 'E'.code.toByte() && patch[cursor + 1] == 'O'.code.toByte() &&
                 patch[cursor + 2] == 'F'.code.toByte()) {
-                require(cursor + 3 == patch.size || cursor + 5 == patch.size) { "Trailing IPS data" }
-                if (cursor + 5 == patch.size) {
-                    require(readU16(patch, cursor + 3) <= MAX_ROM_SIZE) { "IPS final size is too large" }
+                require(cursor + 3 == patch.size || cursor + 6 == patch.size) { "Trailing IPS data" }
+                if (cursor + 6 == patch.size) {
+                    val finalSize = readU24(patch, cursor + 3)
+                    require(finalSize <= MAX_ROM_SIZE) { "IPS final size is too large" }
+                    return output.copyOf(finalSize)
                 }
                 return output
             }

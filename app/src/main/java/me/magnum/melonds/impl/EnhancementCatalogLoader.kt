@@ -12,22 +12,20 @@ import javax.inject.Inject
 class EnhancementCatalogLoader @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    fun inspect(packageUri: Uri): EnhancementManifest {
+    fun stage(packageUri: Uri): EnhancementPackageInstaller.Staged {
         val input = requireNotNull(context.contentResolver.openInputStream(packageUri)) {
             "Unable to open enhancement package"
         }
         return input.use {
-            EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).inspect(it)
+            EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).stage(it)
         }
     }
 
-    fun install(packageUri: Uri, replace: Boolean = false): EnhancementManifest {
-        val input = requireNotNull(context.contentResolver.openInputStream(packageUri)) {
-            "Unable to open enhancement package"
-        }
-        return input.use {
-            EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).install(it, replace)
-        }
+    fun install(
+        staged: EnhancementPackageInstaller.Staged,
+        replace: Boolean = false,
+    ): EnhancementManifest {
+        return EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).install(staged, replace)
     }
 
     fun load(): EnhancementCatalog {

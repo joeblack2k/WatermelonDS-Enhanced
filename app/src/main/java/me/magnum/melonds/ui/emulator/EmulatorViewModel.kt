@@ -770,26 +770,34 @@ class EmulatorViewModel @Inject constructor(
             currentRom = rom
             activeRomConfig.value = rom
             val romInfo = getRomInfo(rom)
-            val catalog = enhancementCatalogLoader.load()
-            val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
-            activeEnhancementSession = identity?.let {
-                val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
-                val reconciled = rom.config.enabledEnhancements.intersect(matchingIds)
-                if (reconciled != rom.config.enabledEnhancements) {
-                    val config = rom.config.copy(enabledEnhancements = reconciled)
-                    romsRepository.updateRomConfig(rom, config)
-                    currentRom = rom.copy(config = config)
-                    activeRomConfig.value = currentRom
-                }
-                catalog.createSession(
-                    identity = it,
-                    enabledIds = reconciled,
-                )
-            } ?: run {
-                require(rom.config.enabledEnhancements.isEmpty()) {
-                    "Enhanced add-ons require a readable ROM header"
-                }
+            activeEnhancementSession = if (rom.config.enabledEnhancements.isEmpty()) {
                 null
+            } else {
+                val catalog = enhancementCatalogLoader.load()
+                val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
+                identity?.let {
+                    val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
+                    val reconciled = rom.config.enabledEnhancements.intersect(matchingIds)
+                    if (reconciled != rom.config.enabledEnhancements) {
+                        val config = rom.config.copy(enabledEnhancements = reconciled)
+                        romsRepository.updateRomConfig(rom, config)
+                        currentRom = rom.copy(config = config)
+                        activeRomConfig.value = currentRom
+                    }
+                    if (reconciled.isEmpty()) {
+                        null
+                    } else {
+                        catalog.createSession(
+                            identity = it,
+                            enabledIds = reconciled,
+                        )
+                    }
+                } ?: run {
+                    require(rom.config.enabledEnhancements.isEmpty()) {
+                        "Enhanced add-ons require a readable ROM header"
+                    }
+                    null
+                }
             }
             _activeRuntimeInputProtocol.value = null
             try {
@@ -827,7 +835,7 @@ class EmulatorViewModel @Inject constructor(
                 retroAchievementsEndpointProvider.endSession()
                 retroAchievementsEndpointProvider.currentSnapshot()
             }
-            val launchDecision = (if (isRetroAchievementsEnabledForLaunch) {
+            var launchDecision = (if (isRetroAchievementsEnabledForLaunch) {
                 runCatching {
                     decideRetroAchievementsLaunchDecision(
                         rom,
@@ -868,7 +876,8 @@ class EmulatorViewModel @Inject constructor(
             startEmulatorSession(
                 sessionType = EmulatorSession.SessionType.RomSession(launchRom),
                 areRetroAchievementsEnabled = isRetroAchievementsEnabledForLaunch,
-                isRetroAchievementsHardcoreModeEnabled = launchDecision.sessionMode == RetroAchievementsSessionMode.HARDCORE,
+                // Hardcore is deliberately initialized only after active add-ons are resolved below.
+                isRetroAchievementsHardcoreModeEnabled = false,
             )
             startObservingMainScreenBackground()
             startObservingSecondaryScreenBackground()
@@ -961,6 +970,29 @@ class EmulatorViewModel @Inject constructor(
                         emulatorManager.updateCheats(baseCheats + enhancedCheats)
                     } else {
                         emulatorManager.updateCheats(baseCheats)
+                    }
+                    if (isRetroAchievementsEnabledForLaunch) {
+                        val activeHardcoreAllowed = activeEnhancementSession?.hardcoreCompatible != false
+                        val effectiveDecision = runCatching {
+                            decideRetroAchievementsLaunchDecision(
+                                rom,
+                                endpointSnapshot,
+                                hardcoreAllowed = activeHardcoreAllowed,
+                            )
+                        }.getOrElse {
+                            launchDecision.copy(
+                                sessionMode = RetroAchievementsSessionMode.SOFTCORE,
+                                isHardcoreEligibleAfterOnlineStart = false,
+                            )
+                        }
+                        launchDecision = effectiveDecision
+                        retroAchievementsSessionMode = effectiveDecision.sessionMode
+                        isHardcoreEligibleAfterOnlineStart =
+                            effectiveDecision.isHardcoreEligibleAfterOnlineStart
+                        emulatorSession.applyRetroAchievementsLaunchPolicy(
+                            areRetroAchievementsEnabled = true,
+                            isHardcoreModeEnabled = effectiveDecision.sessionMode == RetroAchievementsSessionMode.HARDCORE,
+                        )
                     }
                     if (isRetroAchievementsEnabledForLaunch) {
                         startRetroAchievementsSession(rom, launchDecision).await()

@@ -226,3 +226,67 @@ No APK/build output, ROM, credential, or capture is tracked.
 
 Repository build and baseline debug launch evidenced; distribution and
 enhancement runtime acceptance remain blocked.
+
+## M3 device attempt
+
+This bounded M3 attempt used ADB serial `6b0af897` and the current locally
+assembled APK:
+`app/build/outputs/apk/gitHubProd/debug/app-gitHub-prod-debug.apk`
+(SHA-256 `a7641d5503df4a64543e03d17c480ec91a8540c245ca690f412739739f1e6ba4`).
+The APK installed successfully over package
+`me.magnum.melondualds.dev`, version `0.7.0.rc5`, versionCode `39`.
+ThorDS package `io.github.joeblack2k.thords` remained installed at version
+`0.1.2-beta.2.8`; its package state was captured before and after.
+
+The existing directory `/sdcard/Roms/NDS` was inspected and contains the
+requested ROM at the exact requested path. It also contains an existing
+`0022 - Super Mario 64 DS (EU).sav` (8 KiB, dated 2026-08-09), already
+colocated with the matching ROM. No save was copied, created, or overwritten;
+the requested statement that no SM64DS save was found is therefore not
+supported by the observed device state.
+
+The normal `RomListActivity` launcher was started. Android displayed the
+system `Use USB for` dialog with `No data transfer`, `File transfer`, and
+`CANCEL`. Back, a normal visible-coordinate cancel attempt, and Tab/Enter did
+not clear the dialog; the UI dump continued to report it. No debug receiver
+was used. The ROM was not launched, and no ROM configuration was changed or
+read through the blocked UI. Consequently this attempt provides no proof of
+the original URI/config, empty `enabledEnhancements`, or an actual ROM frame.
+
+Post-state evidence is in `/tmp/watermelon-m3-20260811-220901/`, including
+the install result, redacted package/activity dumps, bounded filtered logcat,
+ROM directory listing, launcher screenshots, and the materialization scan.
+The scan found only the app's existing
+`/sdcard/Android/data/me.magnum.melondualds.dev/cache` path; no
+`Enhancements` package or temporary materialized ROM was observed. The
+launcher/activity screenshot was black and is not counted as a game-frame
+acceptance screenshot.
+
+After a device reboot, the USB dialog was cleared and the normal UI flow
+continued. SAF selected `/sdcard/ROMs/NDS`; the device path is uppercase
+`ROMs`, while the earlier shell inventory also showed the existing
+`/sdcard/Roms/NDS` alias/path. The user-visible ROM list showed
+`0022 - Super Mario 64 DS (EU).nds` adjacent to
+`0022 - Super Mario 64 DS (EU).sav` (8 KiB), confirming save adjacency
+without any copy or overwrite.
+
+The first search card was accidentally launched during search; bounded logs
+identified that launch as USA Rev1 `ASME`, so it is explicitly excluded from
+EU acceptance. The second card was launched through the
+normal UI. Bounded logcat identified EU `ASMP`, a URI ending in
+`0022 - Super Mario 64 DS (EU).nds`, and `Game is now booting`, with no fatal
+exception. This proves normal EU ROM launch and save adjacency; it does not
+claim USA launch acceptance. After launch, the pause menu showed the actual
+game image behind it. Tapping Resume produced the non-black gameplay/title
+frame `/tmp/watermelon-m3-20260811-220901/eu-game-visible.png`, showing the
+Super Mario 64 DS EU title screen (a title-screen frame, not a gameplay
+frame). Normal EU launch and actual game-frame
+acceptance are therefore proven. No evidence established the original ROM
+config or an empty `enabledEnhancements` set, and no add-on disabled-config
+claim is made.
+
+M3 normal EU launch and actual game-frame acceptance are **PROVEN**. Add-on
+gameplay, camera, widescreen, 60fps, and explicit empty
+`enabledEnhancements` config acceptance remain open. The earlier USB-dialog
+blocker was cleared by the reboot. No source, payload, license, workflow,
+ROM, save, or ThorDS change was made.

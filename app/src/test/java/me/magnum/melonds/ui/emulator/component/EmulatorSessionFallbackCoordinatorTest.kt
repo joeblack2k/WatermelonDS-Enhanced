@@ -10,9 +10,47 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
+import java.io.File
 
 class EmulatorSessionFallbackCoordinatorTest {
+    @Test
+    fun emptyEnhancedLaunchIsRejectedBeforeAnyActivationWork() = runTest {
+        val events = mutableListOf<String>()
+
+        try {
+            orchestrateEnhancedLaunch(
+                addOnIds = emptyList(),
+                loadRomPaused = { events += "load" },
+                reportCapabilities = { events += "capabilities" },
+                prepare = { events += "prepare"; true },
+                activate = { events += "activate"; emptySet() },
+                compose = { events += "compose"; it },
+                expose = { events += "expose"; null to null },
+                hardcoreAllowed = { events += "hardcore"; true },
+            )
+            fail("empty enhanced launch must be rejected")
+        } catch (exception: IllegalArgumentException) {
+            assertTrue(exception.message.orEmpty().contains("at least one add-on"))
+        }
+
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun reconciledEmptyPathSkipsEnhancementCatalogAndSessionWork() {
+        val source = File("src/main/java/me/magnum/melonds/ui/emulator/EmulatorViewModel.kt").readText()
+        val launch = source.substringAfter("private suspend fun launchRom(")
+            .substringBefore("private fun isRetroAchievementsEnabledForLaunch")
+
+        assertTrue(launch.contains("if (rom.config.enabledEnhancements.isEmpty())"))
+        assertTrue(launch.contains("if (reconciled.isEmpty())"))
+        assertTrue(launch.contains("catalog.createSession"))
+        assertTrue(launch.indexOf("if (reconciled.isEmpty())") < launch.indexOf("catalog.createSession"))
+        assertTrue(launch.indexOf("if (rom.config.enabledEnhancements.isEmpty())") < launch.indexOf("enhancementCatalogLoader.load()"))
+    }
+
     @Test
     fun enhancedLaunchOrdersLoadCapabilityActivationCompositionExposureAndPolicy() = runTest {
         val events = mutableListOf<String>()
@@ -60,6 +98,47 @@ class EmulatorSessionFallbackCoordinatorTest {
         assertEquals("input", result.runtimeInput)
         assertEquals("presentation", result.presentation)
         assertTrue(result.hardcoreAllowed)
+    }
+
+    @Test
+    fun incompatibleActiveAddOnBlocksHardcoreBeforePolicyIsPublished() = runTest {
+        val result = orchestrateEnhancedLaunch(
+            addOnIds = listOf("incompatible"),
+            loadRomPaused = {},
+            reportCapabilities = {},
+            prepare = { true },
+            activate = { it.toSet() },
+            compose = { it },
+            expose = { null to null },
+            hardcoreAllowed = { false },
+        )
+
+        assertEquals(setOf("incompatible"), result.activeIds)
+        assertFalse(result.hardcoreAllowed)
+        assertTrue(result.effectivePolicy().cheatsAllowed)
+        assertTrue(result.effectivePolicy().saveStatesAllowed)
+        assertTrue(result.effectivePolicy().retroAchievementsAllowed)
+    }
+
+    @Test
+    fun compatibleActiveAddOnPublishesPolicyToAllSessionGates() = runTest {
+        val result = orchestrateEnhancedLaunch(
+            addOnIds = listOf("compatible"),
+            loadRomPaused = {},
+            reportCapabilities = {},
+            prepare = { true },
+            activate = { it.toSet() },
+            compose = { it },
+            expose = { null to null },
+            hardcoreAllowed = { true },
+        )
+
+        val policy = result.effectivePolicy()
+        assertEquals(setOf("compatible"), policy.activeIds)
+        assertTrue(policy.hardcoreAllowed)
+        assertFalse(policy.cheatsAllowed)
+        assertFalse(policy.saveStatesAllowed)
+        assertTrue(policy.retroAchievementsAllowed)
     }
 
     @Test

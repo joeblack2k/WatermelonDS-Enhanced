@@ -9,7 +9,7 @@ import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.domain.model.ControllerConfiguration
 import me.magnum.melonds.domain.model.Input
 import me.magnum.melonds.domain.model.InputConfig
-import me.magnum.enhancements.RuntimeInputProtocol
+import me.magnum.enhancements.RuntimeTransientInputAdapter
 import me.magnum.enhancements.EnhancementRuntimeInput
 import java.util.Locale
 import kotlin.math.absoluteValue
@@ -33,10 +33,10 @@ class InputProcessor(
     private var slot2DigitalRightPressed = false
     private var slot2DigitalUpPressed = false
     private var slot2DigitalDownPressed = false
-    private val cameraProtocol = runtimeInput?.let {
-        RuntimeInputProtocol(
+    private val transientInputAdapter = runtimeInput?.let {
+        RuntimeTransientInputAdapter(
             deadzone = it.deadzone,
-            yawUnitsPerTick = (850f * it.sensitivity).toInt()
+            scalar = (850f * it.sensitivity).toInt()
                 .coerceIn(1, Short.MAX_VALUE.toInt())
                 .toShort(),
         )
@@ -57,7 +57,7 @@ class InputProcessor(
     override fun onKeyEvent(keyEvent: KeyEvent): Boolean {
         if (runtimeInput != null && keyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_THUMBR) {
             if (keyEvent.action == KeyEvent.ACTION_DOWN && keyEvent.repeatCount == 0) {
-                sendCameraState(requireNotNull(cameraProtocol).recenter())
+                sendTransientInput(requireNotNull(transientInputAdapter).action())
             }
             return true
         }
@@ -85,12 +85,12 @@ class InputProcessor(
     override fun onMotionEvent(motionEvent: MotionEvent): Boolean {
         if (isControllerMotionEvent(motionEvent)) {
             val slot2Handled = processSlot2AnalogFromMotionEvent(motionEvent)
-            val cameraHandled = if (runtimeInput != null) {
+            val transientHandled = if (runtimeInput != null) {
                 val x = motionEvent.getAxisValue(runtimeInput.axisXCode) *
                     if (runtimeInput.invertX) -1f else 1f
                 val y = motionEvent.getAxisValue(runtimeInput.axisYCode) *
                     if (runtimeInput.invertY) -1f else 1f
-                sendCameraState(requireNotNull(cameraProtocol).update(x, y))
+                sendTransientInput(requireNotNull(transientInputAdapter).update(x, y))
                 true
             } else {
                 false
@@ -100,7 +100,7 @@ class InputProcessor(
             deviceAxis.forEach {
                 val axis = it.key
                 val axisState = it.value
-                if (cameraHandled && (axis.axisCode == runtimeInput?.axisXCode || axis.axisCode == runtimeInput?.axisYCode)) {
+                if (transientHandled && (axis.axisCode == runtimeInput?.axisXCode || axis.axisCode == runtimeInput?.axisYCode)) {
                     axisState.value = 0f
                     axisState.active = false
                     return@forEach
@@ -125,18 +125,18 @@ class InputProcessor(
                 }
                 axisState.value = clampedValue
             }
-            return slot2Handled || cameraHandled || deviceAxis.isNotEmpty()
+            return slot2Handled || transientHandled || deviceAxis.isNotEmpty()
         } else {
             return false
         }
     }
 
-    private fun sendCameraState(state: me.magnum.enhancements.RuntimeInputFrame) {
+    private fun sendTransientInput(state: me.magnum.enhancements.RuntimeInputFrame) {
         MelonEmulator.setRuntimeTransientInputFrame(
-            state.yawQ12,
-            state.pitchQ12,
-            state.yawUnitsPerTick,
-            state.recenterSequence,
+            state.axisXQ12,
+            state.axisYQ12,
+            state.scalar,
+            state.actionSequence,
             state.flags,
         )
     }
@@ -151,7 +151,7 @@ class InputProcessor(
     override fun neutralizeTransientInputs() {
         MelonEmulator.setSlot2AnalogInput(0f, 0f)
         if (runtimeInput != null) {
-            sendCameraState(requireNotNull(cameraProtocol).neutral())
+            sendTransientInput(requireNotNull(transientInputAdapter).neutral())
         }
         slot2DigitalLeftPressed = false
         slot2DigitalRightPressed = false

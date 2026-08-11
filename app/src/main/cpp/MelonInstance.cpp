@@ -25,6 +25,7 @@
 #include "GPU3D_Vulkan.h"
 #include "MelonDS.h"
 #include "MelonInstance.h"
+#include "RuntimeTransientInputAdapter.h"
 #include "NDS.h"
 #include "NDSCart.h"
 #include "VulkanContext.h"
@@ -2413,12 +2414,13 @@ u32 MelonInstance::runFrame()
 
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogX, slot2AnalogX.load(std::memory_order_relaxed));
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogY, slot2AnalogY.load(std::memory_order_relaxed));
-    nds->GBACartSlot.SetCameraState(
-        slot2CameraYawInputQ12.load(std::memory_order_relaxed),
-        slot2CameraPitchInputQ12.load(std::memory_order_relaxed),
-        slot2CameraYawUnitsPerTick.load(std::memory_order_relaxed),
-        slot2CameraRecenterSequence.load(std::memory_order_relaxed),
-        slot2CameraFlags.load(std::memory_order_relaxed));
+    MelonDSAndroid::applyRuntimeTransientInput(
+        nds->GBACartSlot,
+        runtimeFrameAxisXQ12.load(std::memory_order_relaxed),
+        runtimeFrameAxisYQ12.load(std::memory_order_relaxed),
+        runtimeFrameScalar.load(std::memory_order_relaxed),
+        runtimeFrameActionSequence.load(std::memory_order_relaxed),
+        runtimeFrameFlags.load(std::memory_order_relaxed));
 
     int screenWidth;
     int screenHeight;
@@ -2834,17 +2836,17 @@ void MelonInstance::clearTransientInputState()
 {
     setSlot2AnalogInput(0.0f, 0.0f);
     setRuntimeTransientInputFrame(0, 0, 0,
-        slot2CameraRecenterSequence.load(std::memory_order_relaxed), 0);
+        runtimeFrameActionSequence.load(std::memory_order_relaxed), 0);
 }
 
-void MelonInstance::setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
-    u16 recenterSequence, u16 flags)
+void MelonInstance::setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+    u16 actionSequence, u16 flags)
 {
-    slot2CameraYawInputQ12.store(std::clamp<s16>(yawInputQ12, -4096, 4096), std::memory_order_relaxed);
-    slot2CameraPitchInputQ12.store(std::clamp<s16>(pitchInputQ12, -4096, 4096), std::memory_order_relaxed);
-    slot2CameraYawUnitsPerTick.store(yawUnitsPerTick, std::memory_order_relaxed);
-    slot2CameraRecenterSequence.store(recenterSequence, std::memory_order_relaxed);
-    slot2CameraFlags.store(flags, std::memory_order_relaxed);
+    runtimeFrameAxisXQ12.store(std::clamp<s16>(axisXQ12, -4096, 4096), std::memory_order_relaxed);
+    runtimeFrameAxisYQ12.store(std::clamp<s16>(axisYQ12, -4096, 4096), std::memory_order_relaxed);
+    runtimeFrameScalar.store(scalar, std::memory_order_relaxed);
+    runtimeFrameActionSequence.store(actionSequence, std::memory_order_relaxed);
+    runtimeFrameFlags.store(flags, std::memory_order_relaxed);
 }
 
 bool MelonInstance::validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const

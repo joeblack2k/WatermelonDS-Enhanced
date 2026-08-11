@@ -11,6 +11,42 @@ class EnhancementPackageInstaller(
     private val root: File,
     private val rename: (File, File) -> Boolean = File::renameTo,
 ) {
+    class Staged internal constructor(
+        internal val directory: File,
+        val manifest: EnhancementManifest,
+    ) {
+        fun cleanup() {
+            directory.deleteRecursively()
+        }
+    }
+
+    fun stage(input: InputStream): Staged {
+        root.mkdirs()
+        val staging = File(root, ".staged-${UUID.randomUUID()}").also { it.mkdirs() }
+        return try {
+            extractSafely(input, staging)
+            val manifest = EnhancementManifestParser.parse(findManifest(staging).readText())
+            require(manifest.isInstallable()) {
+                "Source-only enhancements cannot be installed"
+            }
+            Staged(staging, manifest)
+        } catch (error: Throwable) {
+            staging.deleteRecursively()
+            throw error
+        }
+    }
+
+    fun install(staged: Staged, replace: Boolean = false): EnhancementManifest {
+        require(staged.directory.parentFile?.canonicalFile == root.canonicalFile) {
+            "Staged enhancement belongs to a different installer"
+        }
+        return try {
+            installStaged(staged.directory, staged.manifest, replace)
+        } finally {
+            staged.directory.deleteRecursively()
+        }
+    }
+
     fun inspect(input: InputStream): EnhancementManifest {
         val staging = File(root, ".inspecting-${UUID.randomUUID()}").also { it.mkdirs() }
         return try {
@@ -22,15 +58,19 @@ class EnhancementPackageInstaller(
     }
 
     fun install(input: InputStream, replace: Boolean = false): EnhancementManifest {
-        root.mkdirs()
-        val staging = File(root, ".installing-${UUID.randomUUID()}")
-        staging.mkdirs()
+        return install(stage(input), replace)
+    }
+
+    private fun installStaged(
+        staging: File,
+        manifest: EnhancementManifest,
+        replace: Boolean,
+    ): EnhancementManifest {
         try {
-            extractSafely(input, staging)
             val manifestFile = findManifest(staging)
-            val manifest = EnhancementManifestParser.parse(manifestFile.readText())
-            require(manifest.isInstallable()) {
-                "Source-only enhancements cannot be installed"
+            val stagedManifest = EnhancementManifestParser.parse(manifestFile.readText())
+            require(stagedManifest == manifest) {
+                "Validated enhancement identity changed before installation"
             }
             val packageDirectory = File(root, manifest.id)
             require(replace || !packageDirectory.exists()) { "Enhancement is already installed" }
@@ -57,6 +97,8 @@ class EnhancementPackageInstaller(
                     EnhancementPatchType.BPS -> EnhancementPatchApplier.validateBps(patchFile.readBytes())
                 }
             }
+            // Keep the exact validated staging directory; never reopen the source URI.
+            val validatedPackage = packageContents
             val backupDirectory = if (replace && packageDirectory.exists()) {
                 File(root, ".backup-${UUID.randomUUID()}").also {
                     require(rename(packageDirectory, it)) {
@@ -67,7 +109,7 @@ class EnhancementPackageInstaller(
                 null
             }
             try {
-                require(rename(packageContents, packageDirectory)) {
+                require(rename(validatedPackage, packageDirectory)) {
                     "Unable to install enhancement package"
                 }
             } catch (error: Throwable) {
@@ -80,7 +122,7 @@ class EnhancementPackageInstaller(
                 throw error
             }
             backupDirectory?.deleteRecursively()
-            staging.deleteRecursively()
+            validatedPackage.deleteRecursively()
             return manifest
         } catch (error: Throwable) {
             staging.deleteRecursively()

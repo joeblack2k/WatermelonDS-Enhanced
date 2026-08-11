@@ -189,10 +189,10 @@ object MelonEmulator {
 
     external fun setSlot2AnalogInput(x: Float, y: Float)
     external fun setRuntimeTransientInputFrame(
-        yawInputQ12: Short,
-        pitchInputQ12: Short,
-        yawUnitsPerTick: Short,
-        recenterSequence: Short,
+        axisXQ12: Short,
+        axisYQ12: Short,
+        scalar: Short,
+        actionSequence: Short,
         flags: Short,
     )
     external fun validateEnhancedRuntimeGuard(address: Int, expectedWord: Int): Boolean

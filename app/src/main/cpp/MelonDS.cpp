@@ -727,11 +727,11 @@ namespace MelonDSAndroid
             instance->setSlot2AnalogInput(x, y);
     }
 
-    void setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
-        u16 recenterSequence, u16 flags)
+    void setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+        u16 actionSequence, u16 flags)
     {
         if (instance)
-            instance->setRuntimeTransientInputFrame(yawInputQ12, pitchInputQ12, yawUnitsPerTick, recenterSequence, flags);
+            instance->setRuntimeTransientInputFrame(axisXQ12, axisYQ12, scalar, actionSequence, flags);
     }
 
     bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord)

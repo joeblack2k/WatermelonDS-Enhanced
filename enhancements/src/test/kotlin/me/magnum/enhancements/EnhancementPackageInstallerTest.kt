@@ -80,6 +80,37 @@ class EnhancementPackageInstallerTest {
     }
 
     @Test
+    fun stagedArtifactIsInstalledWithoutReopeningOrReextractingSource() {
+        val root = Files.createTempDirectory("enhancements-stage").toFile()
+        val source = zipOf(
+            "bundle/manifest.json" to manifest("staged.addon", "1.0.0", "ASMP"),
+        )
+        val installer = EnhancementPackageInstaller(root)
+        val staged = installer.stage(source)
+
+        assertEquals("staged.addon", staged.manifest.id)
+        assertTrue(staged.directory.exists())
+        installer.install(staged)
+
+        assertTrue(File(root, "staged.addon/manifest.json").isFile)
+        assertFalse(root.listFiles()?.any { it.name.startsWith(".staged-") } == true)
+        root.deleteRecursively()
+    }
+
+    @Test
+    fun cancellingStagedImportCleansTheRetainedArtifact() {
+        val root = Files.createTempDirectory("enhancements-cancel").toFile()
+        val staged = EnhancementPackageInstaller(root).stage(
+            zipOf("bundle/manifest.json" to manifest("cancelled.addon", "1.0.0", "ASMP")),
+        )
+
+        staged.cleanup()
+
+        assertFalse(root.listFiles()?.any { it.name.startsWith(".staged-") } == true)
+        root.deleteRecursively()
+    }
+
+    @Test
     fun rejectsMissingNestedPatchWithoutLeavingInstalledOrStagingFiles() {
         val root = Files.createTempDirectory("enhancements").toFile()
         val manifest = """{

@@ -19,6 +19,17 @@ class EnhancementPatchApplierTest {
     }
 
     @Test
+    fun appliesIpsOptionalThreeByteTruncateAndExtendSizes() {
+        val truncate = "PATCH".encodeToByteArray() +
+            byteArrayOf(*"EOF".encodeToByteArray(), 0, 0, 2)
+        assertArrayEquals(byteArrayOf(1, 2), EnhancementPatchApplier.applyIps(byteArrayOf(1, 2, 3), truncate))
+
+        val extend = "PATCH".encodeToByteArray() +
+            byteArrayOf(*"EOF".encodeToByteArray(), 0, 0, 4)
+        assertArrayEquals(byteArrayOf(1, 2, 3, 0), EnhancementPatchApplier.applyIps(byteArrayOf(1, 2, 3), extend))
+    }
+
+    @Test
     fun appliesBpsTargetReadAndChecksCrcs() {
         val source = byteArrayOf(1, 2, 3)
         val body = byteArrayOf(
@@ -58,8 +69,8 @@ class EnhancementPatchApplierTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             EnhancementPatchApplier.applyBps(
-                "BPS1".encodeToByteArray() + ByteArray(12) { 0x80.toByte() },
                 ByteArray(32) { 0x00 },
+                "BPS1".encodeToByteArray() + ByteArray(12) { 0x80.toByte() },
             )
         }
     }

@@ -1,36 +1,36 @@
 package me.magnum.enhancements
 
 data class RuntimeInputFrame(
-    val yawQ12: Short,
-    val pitchQ12: Short,
-    val yawUnitsPerTick: Short,
-    val recenterSequence: Short,
+    val axisXQ12: Short,
+    val axisYQ12: Short,
+    val scalar: Short,
+    val actionSequence: Short,
     val flags: Short,
 )
 
-class RuntimeInputProtocol(
+class RuntimeTransientInputAdapter(
     private val deadzone: Float = 0.12f,
-    private val yawUnitsPerTick: Short = 850,
+    private val scalar: Short = 850,
 ) {
-    private var recenterSequence: Short = 0
+    private var actionSequence: Short = 0
 
     fun update(rawX: Float, rawY: Float): RuntimeInputFrame {
         return RuntimeInputFrame(
-            yawQ12 = q12(applyDeadzone(rawX)),
-            pitchQ12 = q12(applyDeadzone(rawY)),
-            yawUnitsPerTick = yawUnitsPerTick,
-            recenterSequence = recenterSequence,
+            axisXQ12 = q12(applyDeadzone(rawX)),
+            axisYQ12 = q12(applyDeadzone(rawY)),
+            scalar = scalar,
+            actionSequence = actionSequence,
             flags = 1,
         )
     }
 
-    fun recenter(): RuntimeInputFrame {
-        recenterSequence = (recenterSequence + 1).toShort()
+    fun action(): RuntimeInputFrame {
+        actionSequence = (actionSequence + 1).toShort()
         return update(0f, 0f)
     }
 
     fun neutral(): RuntimeInputFrame {
-        return update(0f, 0f).copy(yawUnitsPerTick = 0, flags = 0)
+        return update(0f, 0f).copy(scalar = 0, flags = 0)
     }
 
     private fun applyDeadzone(value: Float): Float {

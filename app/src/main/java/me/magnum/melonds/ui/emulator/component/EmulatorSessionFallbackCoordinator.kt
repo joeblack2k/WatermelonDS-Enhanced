@@ -33,6 +33,18 @@ internal data class EnhancedOrchestrationResult<T>(
     val hardcoreAllowed: Boolean,
 )
 
+internal data class EffectiveEnhancedLaunchPolicy(
+    val activeIds: Set<String>,
+    val hardcoreAllowed: Boolean,
+) {
+    val cheatsAllowed: Boolean get() = !hardcoreAllowed
+    val saveStatesAllowed: Boolean get() = !hardcoreAllowed
+    val retroAchievementsAllowed: Boolean get() = true
+}
+
+internal fun <T> EnhancedOrchestrationResult<T>.effectivePolicy() =
+    EffectiveEnhancedLaunchPolicy(activeIds, hardcoreAllowed)
+
 /**
  * Pure ordering seam for the enhanced launch contract.
  */
@@ -46,6 +58,7 @@ internal suspend fun <T> orchestrateEnhancedLaunch(
     expose: (Set<String>) -> Pair<Any?, Any?>,
     hardcoreAllowed: (Set<String>) -> Boolean,
 ): EnhancedOrchestrationResult<T> {
+    require(addOnIds.isNotEmpty()) { "Enhanced orchestration requires at least one add-on" }
     loadRomPaused()
     reportCapabilities()
     val prepared = addOnIds.filter(prepare)

@@ -57,8 +57,8 @@ public:
     void pressKey(u32 key);
     void releaseKey(u32 key);
     void setSlot2AnalogInput(float x, float y);
-    void setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
-        u16 recenterSequence, u16 flags);
+    void setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+        u16 actionSequence, u16 flags);
     bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const;
     bool applyEnhancedRuntimeOverlay(
         const std::vector<u32>& addresses,
@@ -332,11 +332,11 @@ private:
     u32 inputMask;
     std::atomic<float> slot2AnalogX = 0.0f;
     std::atomic<float> slot2AnalogY = 0.0f;
-    std::atomic<s16> slot2CameraYawInputQ12 = 0;
-    std::atomic<s16> slot2CameraPitchInputQ12 = 0;
-    std::atomic<u16> slot2CameraYawUnitsPerTick = 0;
-    std::atomic<u16> slot2CameraRecenterSequence = 0;
-    std::atomic<u16> slot2CameraFlags = 0;
+    std::atomic<s16> runtimeFrameAxisXQ12 = 0;
+    std::atomic<s16> runtimeFrameAxisYQ12 = 0;
+    std::atomic<u16> runtimeFrameScalar = 0;
+    std::atomic<u16> runtimeFrameActionSequence = 0;
+    std::atomic<u16> runtimeFrameFlags = 0;
 
     const VulkanSessionProfile vulkanSessionProfile;
     std::shared_ptr<EmulatorConfiguration> currentConfiguration;

@@ -22,7 +22,9 @@ import me.magnum.melonds.common.UriPermissionManager
 import me.magnum.melonds.domain.model.SizeUnit
 import me.magnum.melonds.impl.SettingsBackupManager
 import me.magnum.melonds.impl.EnhancementCatalogLoader
+import me.magnum.melonds.impl.StagedEnhancementOwner
 import me.magnum.enhancements.verificationSummary
+import me.magnum.enhancements.EnhancementPackageInstaller
 import me.magnum.melonds.ui.settings.PreferenceFragmentHelper
 import me.magnum.melonds.ui.settings.PreferenceFragmentTitleProvider
 import me.magnum.melonds.ui.settings.preferences.StoragePickerPreference
@@ -43,6 +45,7 @@ class RomsPreferencesFragment : BasePreferenceFragment(), PreferenceFragmentTitl
 
     private lateinit var clearRomCachePreference: Preference
     private lateinit var importEnhancementPreference: Preference
+    private var pendingEnhancement: EnhancementPackageInstaller.Staged? = null
 
     private val enhancementImportLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -83,34 +86,48 @@ class RomsPreferencesFragment : BasePreferenceFragment(), PreferenceFragmentTitl
 
     private fun importEnhancement(uri: Uri) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val owner = StagedEnhancementOwner()
             try {
-                val incoming = withContext(Dispatchers.IO) {
-                    enhancementCatalogLoader.inspect(uri)
+                withContext(Dispatchers.IO) {
+                    owner.adopt(enhancementCatalogLoader.stage(uri))
                 }
-            val existing = enhancementCatalogLoader.load().find(incoming.id)
-            if (existing != null) {
-                AlertDialog.Builder(requireContext())
-                    .setTitle(R.string.replace_enhancement_title)
-                    .setMessage(getString(R.string.replace_enhancement_message, existing.name, existing.version))
-                    .setPositiveButton(R.string.replace_enhancement) { _, _ -> installEnhancement(uri, true, incoming.id) }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-            } else {
-                installEnhancement(uri, false, incoming.id)
-            }
+                val staged = owner.transfer()
+                pendingEnhancement?.cleanup()
+                pendingEnhancement = staged
+                val incoming = staged.manifest
+                val existing = enhancementCatalogLoader.load().find(incoming.id)
+                if (existing != null) {
+                    val dialog = AlertDialog.Builder(requireContext())
+                        .setTitle(R.string.replace_enhancement_title)
+                        .setMessage(getString(R.string.replace_enhancement_message, existing.name, existing.version))
+                        .setPositiveButton(R.string.replace_enhancement) { _, _ ->
+                            pendingEnhancement = null
+                            installEnhancement(staged, true)
+                        }
+                        .setNegativeButton(android.R.string.cancel) { _, _ -> cleanupPendingEnhancement(staged) }
+                        .create()
+                    dialog.setOnDismissListener { cleanupPendingEnhancement(staged) }
+                    dialog.show()
+                } else {
+                    installEnhancement(staged, false)
+                }
             } catch (error: Exception) {
+                pendingEnhancement?.cleanup()
+                pendingEnhancement = null
                 showEnhancementImportResult(false, error.message ?: error.javaClass.simpleName)
+            } finally {
+                owner.close()
             }
         }
     }
 
-    private fun installEnhancement(uri: Uri, replace: Boolean, inspectedId: String) {
+    private fun installEnhancement(staged: EnhancementPackageInstaller.Staged, replace: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
             val manifest = withContext(Dispatchers.IO) {
-                enhancementCatalogLoader.install(uri, replace)
+                enhancementCatalogLoader.install(staged, replace)
             }
-            check(manifest.id == inspectedId) { "Inspected enhancement package changed" }
+            pendingEnhancement = null
             val catalogSize = enhancementCatalogLoader.load().manifests.size
             showEnhancementImportResult(
                 true,
@@ -124,8 +141,16 @@ class RomsPreferencesFragment : BasePreferenceFragment(), PreferenceFragmentTitl
                 ),
             )
             } catch (error: Exception) {
+                staged.cleanup()
                 showEnhancementImportResult(false, error.message ?: error.javaClass.simpleName)
             }
+        }
+    }
+
+    private fun cleanupPendingEnhancement(staged: EnhancementPackageInstaller.Staged) {
+        if (pendingEnhancement === staged) {
+            pendingEnhancement = null
+            staged.cleanup()
         }
     }
 
@@ -147,6 +172,12 @@ class RomsPreferencesFragment : BasePreferenceFragment(), PreferenceFragmentTitl
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        pendingEnhancement?.cleanup()
+        pendingEnhancement = null
+        super.onDestroyView()
     }
 
     private fun updateMaxCacheSizePreferenceSummary(maxCacheSizePreference: SeekBarPreference, cacheSizeStep: Int) {
