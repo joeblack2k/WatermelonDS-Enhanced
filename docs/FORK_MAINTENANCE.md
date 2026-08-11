@@ -8,8 +8,9 @@ payloads.
 
 - `origin`: `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`
 - `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
-- `base`: `1e0a463d` (`watermelon-base`)
-- `head`: `b0814823`
+- `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
+- `head`: `codex/watermelon-enhanced-pr@a5d59602c7f48c985c78e85b91a7ed9ba30bcebe`
+- `PR`: `#1`, open and draft
 - `melonDS-android-lib` submodule URL:
   `https://github.com/joeblack2k/melonDS-android-lib.git`
 - `melonDS-android-lib` submodule public branch:
@@ -18,9 +19,9 @@ payloads.
   `e4022d7e7ada535ff5ea9d087db389cc46e8da62`
 
 The gitlink is the submodule commit recorded by the superproject. The public
-branch above currently exposes `e4022d7e`; it is the branch configured in
-`.gitmodules`. The branch setting is the intended source branch for a bounded
-update; it does not make
+repository is `joeblack2k/melonDS-android-lib`, and its public branch above
+currently exposes `e4022d7e`; it is the branch configured in `.gitmodules`.
+The branch setting is the intended source branch for a bounded update; it does not make
 the superproject follow that branch automatically.
 
 ## Bounded update procedure
@@ -45,7 +46,8 @@ the superproject follow that branch automatically.
    not authorize either operation.
 
 Use repository-relative paths and normal Git remotes in notes and review
-messages. Do not record private absolute filesystem paths.
+messages. Do not record user-specific host paths. A tracked `/private`
+placeholder is repository text and does not identify a user's host.
 
 The public branch and gitlink can be checked without changing repository state:
 
