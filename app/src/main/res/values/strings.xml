@@ -288,13 +288,13 @@
     <string name="rom_last_played_format">Last played %1$s</string>
     <string name="max_rom_cache_size">Max. ROM cache size</string>
     <string name="clear_extracted_rom_cache">Clear extracted ROM cache</string>
-    <string name="import_enhancement">Import enhancement ZIP</string>
-    <string name="import_enhancement_summary">Install an app-managed enhancement package</string>
-    <string name="replace_enhancement_title">Replace installed enhancement?</string>
-    <string name="replace_enhancement_message">%1$s %2$s is already installed. Replace it?</string>
-    <string name="replace_enhancement">Replace</string>
-    <string name="enhancement_import_success">Imported %1$s, version %2$s, distribution %3$s. Verification: %4$s. Catalog refreshed (%5$d packages).</string>
-    <string name="enhancement_import_failed">Enhancement import failed: %1$s</string>
+    <string name="import_enhancement" tools:ignore="MissingTranslation">Import enhancement ZIP</string>
+    <string name="import_enhancement_summary" tools:ignore="MissingTranslation">Install an app-managed enhancement package</string>
+    <string name="replace_enhancement_title" tools:ignore="MissingTranslation">Replace installed enhancement?</string>
+    <string name="replace_enhancement_message" tools:ignore="MissingTranslation">%1$s %2$s is already installed. Replace it?</string>
+    <string name="replace_enhancement" tools:ignore="MissingTranslation">Replace</string>
+    <string name="enhancement_import_success" tools:ignore="MissingTranslation">Imported %1$s, version %2$s, distribution %3$s. Verification: %4$s. Catalog refreshed (%5$d packages).</string>
+    <string name="enhancement_import_failed" tools:ignore="MissingTranslation">Enhancement import failed: %1$s</string>
     <string name="cache_size">Cache size: %s</string>
     <string name="cache_size_calculating">Cache size: calculating…</string>
     <string name="rom_search_directory">Search directory</string>

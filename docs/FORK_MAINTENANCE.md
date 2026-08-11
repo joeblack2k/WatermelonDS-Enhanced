@@ -9,7 +9,8 @@ payloads.
 - `origin`: `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`
 - `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
 - `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
-- `head`: `codex/watermelon-enhanced-pr@a5d59602c7f48c985c78e85b91a7ed9ba30bcebe`
+- `origin/PR head`: `codex/watermelon-enhanced-pr@c68734fe226b70d60b20908b2af191293f084c7a`
+- `local HEAD`: `5784068e15cc77fab71adfbf8217fa06940ccb2e` plus the uncommitted M3 documentation batch
 - `PR`: `#1`, open and draft
 - `melonDS-android-lib` submodule URL:
   `https://github.com/joeblack2k/melonDS-android-lib.git`
@@ -68,3 +69,22 @@ test "$(git -C "$tmp/repo/melonDS-android-lib" rev-parse HEAD)" = \
   e4022d7e7ada535ff5ea9d087db389cc46e8da62
 rm -rf "$tmp"
 ```
+
+The other initialized and clean submodules are pinned at:
+
+- `app/src/main/cpp/enet`: `2662c0de09e36f2a2030ccc2c528a3e4c9e8138a`
+- `app/src/main/cpp/faad2`: `2653c918d788c5dc83826c97aaa4de4dd8931a8b`
+- `app/src/main/cpp/oboe`: `a81bb9f87d4105b84b682685d3bfbb5beca371d1`
+
+The M3 batch does not commit or push. APKs, build outputs, ROMs, credentials,
+and captures remain outside Git. The `app/src/main/res/values/strings.xml`
+resource change is part of this documentation batch.
+
+The final lint evidence rerun was `2026-08-11 20:55:59 +0200` using
+`./gradlew lintGitHubProdDebug --no-daemon`: 630 errors, 573 warnings, and
+1 hint. The seven enhancement `MissingTranslation` annotations leave zero
+enhancement-owned `MissingTranslation` findings. One enhancement-owned
+`PluralsCandidate` warning remains for `enhancement_import_success`; it was
+left unsuppressed because the resource is a clear pluralization candidate.
+These are scoped enhancement counts, not a claim that every checkout-wide
+lint finding is baseline. The result does not close runtime or device gates.

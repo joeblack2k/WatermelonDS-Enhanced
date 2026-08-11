@@ -51,8 +51,9 @@ The core is kept in sync with melonDS 1.0 and later upstream changes.
 The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
 upstream is `SapphireRhodonite/melonDS-android`; the fork's base is commit
 `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) and the
-current enhancement head is
-`a5d59602c7f48c985c78e85b91a7ed9ba30bcebe`. The `melonDS-android-lib`
+current local enhancement head is
+`5784068e15cc77fab71adfbf8217fa06940ccb2e`, with `origin`/PR head at
+`c68734fe226b70d60b20908b2af191293f084c7a`. The `melonDS-android-lib`
 submodule is sourced from
 `joeblack2k/melonDS-android-lib` on the public branch
 `codex/slot2-camera-contract`, which exposes the baseline gitlink
@@ -61,7 +62,23 @@ name is stale and is not used.
 
 The current PR is PR #1, open and draft, with base
 `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9` and head
-`codex/watermelon-enhanced-pr@a5d59602c7f48c985c78e85b91a7ed9ba30bcebe`.
+`codex/watermelon-enhanced-pr@c68734fe226b70d60b20908b2af191293f084c7a`;
+local M3 documentation is uncommitted on top of
+`5784068e15cc77fab71adfbf8217fa06940ccb2e`.
+
+M3 evidence is recorded in [`docs/ENHANCED_ACCEPTANCE.md`](docs/ENHANCED_ACCEPTANCE.md).
+The repository build and baseline debug launch are evidenced, but distribution
+and enhancement runtime acceptance remain blocked. The camera and 60 FPS
+add-ons remain `SOURCE_ONLY`; licensing, ROM inputs, RetroAchievements,
+gameplay, and physical enhancement/ROM launch, controls, and gameplay gates
+remain open. Any black screenshot is non-UI evidence only.
+The final lint rerun on `2026-08-11 20:55:59 +0200` found 630 errors,
+573 warnings, and 1 hint; the seven enhancement `MissingTranslation`
+annotations leave zero enhancement-owned `MissingTranslation` findings. One
+enhancement-owned `PluralsCandidate` warning remains for
+`enhancement_import_success`; `strings.xml` is part of this documentation
+batch. These counts are scoped to the enhancement resources and do not
+reclassify the checkout-wide lint result.
 
 For the bounded update procedure and the exact reference model, see
 [`docs/FORK_MAINTENANCE.md`](docs/FORK_MAINTENANCE.md).
