@@ -14,6 +14,31 @@ import org.junit.Test
 
 class EnhancementPackageInstallerTest {
     @Test
+    fun rejectsTamperedPatchWhenManifestHashDoesNotMatch() {
+        val root = Files.createTempDirectory("enhancements-hash").toFile()
+        val manifest = """{
+            "id": "hash.addon",
+            "name": "Hash",
+            "version": "1.0.0",
+            "match": {"gameCode": "ASMP", "headerChecksum": "12345678"},
+            "patches": [{
+              "type": "IPS",
+              "file": "payload/test.ips",
+              "apply": "TEMPORARY_COPY",
+              "sha256": "a4895eb44afc336fecbba6e520cd67e178dace0276655d102fceffa8e5f70570"
+            }]
+        }""".trimIndent()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            EnhancementPackageInstaller(root).install(
+                zipOf("bundle/manifest.json" to manifest, "bundle/payload/test.ips" to "tampered"),
+            )
+        }
+        assertFalse(File(root, "hash.addon").exists())
+        root.deleteRecursively()
+    }
+
+    @Test
     fun installsValidatedPackageUnderManifestId() {
         val root = Files.createTempDirectory("enhancements").toFile()
         val manifest = """{

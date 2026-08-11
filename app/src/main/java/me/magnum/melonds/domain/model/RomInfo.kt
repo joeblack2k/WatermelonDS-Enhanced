@@ -7,6 +7,7 @@ package me.magnum.melonds.domain.model
 data class RomInfo(
     val gameCode: String,
     val headerChecksum: UInt,
+    val revision: Int = 0,
     val gameTitle: String,
     val gameName: String,
 ) {

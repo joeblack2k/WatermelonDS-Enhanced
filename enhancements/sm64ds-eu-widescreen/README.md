@@ -1,31 +1,31 @@
 # SM64DS EU Widescreen
 
-This is the package boundary for the European Super Mario 64 DS widescreen
+This is the installable package for the European Super Mario 64 DS widescreen
 enhancement.
 
-The addon is intentionally not installable yet. The existing ThorDS evidence
-proves the presentation path, but the distributable game-side patch and its
-revision-specific expected-word map still need to be generated from the
-supported ROM revision. Do not add a guessed patch or a full ROM to this
-repository.
+The package targets `ASMP`, revision 0, with RetroAchievements system hash
+`ba3c4052e00c5cc31df5d5534c39de1b`. Its Action Replay payload has 18 canonical
+lines and SHA-256
+`28445a89a887a556b4a0564e21f8ca579eeab437471bff1b38c681efd6a3bbc6`.
 
 The finished package must contain:
 
-- an exact `ASMP` revision match;
+- an exact `ASMP` revision and RetroAchievements hash match;
 - a guarded game-side aspect/culling patch;
-- a runtime capability declaration for layer-aware presentation;
-- a safe 4:3 fallback when the game-side guard or presenter capability fails;
+- only generic layer-aware presentation and native emulator capabilities;
+- a safe native 4:3 fallback when the game-side guard or presenter capability fails;
 - no SM64DS addresses in generic emulator code.
 
-Build inputs are supplied outside the repository:
+The four runtime guards replace `0x00001555` with the 16:9 Fix12 value
+`0x00001C72` at `0x0200D03C`, `0x0200F64C`, `0x02015774`, and `0x020C025C`.
+The live camera aspect field is updated only behind the non-zero camera-pointer
+guard at `0x0209F318`; the package contains no ROM, ARM image, object file, or
+private research path.
 
-1. the user's supported ARM9/overlay images;
-2. the revision-specific symbol/expected-word map;
-3. the generated patch and verifier output.
-
-The evidence and derivation notes remain in the local project research dossier.
-Only generated patch metadata and code that is legal to redistribute belong in
-this addon.
+Provenance: the payload is the revision-specific SM64DS EU aspect profile
+validated by the WatermelonDS Enhanced research and test evidence. The
+repository includes only generated Action Replay text and metadata; no
+third-party ROM or extracted game code is redistributed.
 
 ## Capture tooling
 

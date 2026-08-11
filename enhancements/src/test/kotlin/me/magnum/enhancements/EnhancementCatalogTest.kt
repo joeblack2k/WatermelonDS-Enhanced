@@ -5,8 +5,28 @@ import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.security.MessageDigest
 
 class EnhancementCatalogTest {
+    @Test
+    fun directoryCatalogRejectsTamperedHashedPatch() {
+        val root = Files.createTempDirectory("enhancements-hash").toFile()
+        val packageRoot = File(root, "hashed.addon").also { it.mkdirs() }
+        File(packageRoot, "patch.ards").writeText("00 00000000")
+        val hash = MessageDigest.getInstance("SHA-256").digest("different".toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        File(packageRoot, "manifest.json").writeText(
+            """{"schemaVersion":2,"id":"hashed.addon","name":"Hashed","version":"1",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
+                "patches":[{"type":"ACTION_REPLAY","file":"patch.ards","provenance":"test","sha256":"$hash"}]}""",
+        )
+        try {
+            EnhancementCatalog.loadFromRoots(listOf(root))
+            throw AssertionError("Expected tampered patch rejection")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("SHA-256 mismatch"))
+        }
+    }
     @Test
     fun loadsInternalAndExternalRootsWithOnlyCanonicalDirectPackages() {
         val internal = Files.createTempDirectory("enhancements-internal").toFile()
@@ -82,6 +102,47 @@ class EnhancementCatalogTest {
         assertEquals(
             listOf("us.addon"),
             catalog.matching(EnhancementRomIdentity("ASMP", "1234abcd", "")).map { it.id },
+        )
+    }
+
+    @Test
+    fun matchingRejectsRevisionOrRetroAchievementsMismatch() {
+        val catalog = EnhancementCatalog(
+            listOf(
+                EnhancementManifest(
+                    id = "exact.addon",
+                    name = "Exact",
+                    version = "1.0.0",
+                    match = EnhancementMatch(
+                        "ASMP",
+                        revision = 0,
+                        raHashes = setOf("ba3c4052e00c5cc31df5d5534c39de1b"),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("exact.addon"),
+            catalog.matching(
+                EnhancementRomIdentity(
+                    "ASMP",
+                    null,
+                    "",
+                    revision = 0,
+                    raHash = "BA3C4052E00C5CC31DF5D5534C39DE1B",
+                ),
+            ).map { it.id },
+        )
+        assertTrue(
+            catalog.matching(
+                EnhancementRomIdentity("ASMP", null, "", revision = 1, raHash = "ba3c4052e00c5cc31df5d5534c39de1b"),
+            ).isEmpty(),
+        )
+        assertTrue(
+            catalog.matching(
+                EnhancementRomIdentity("ASMP", null, "", revision = 0, raHash = "00000000000000000000000000000000"),
+            ).isEmpty(),
         )
     }
 

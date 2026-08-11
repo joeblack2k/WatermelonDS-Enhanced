@@ -64,6 +64,8 @@ data class EnhancementMatch(
     val gameCode: String,
     val headerChecksum: String? = null,
     val sha256: Set<String> = emptySet(),
+    val revision: Int? = null,
+    val raHashes: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -113,7 +115,7 @@ object EnhancementManifestParser {
     }
 
     fun validate(manifest: EnhancementManifest) {
-        require(manifest.schemaVersion == 1) { "Unsupported enhancement schema" }
+        require(manifest.schemaVersion == 1 || manifest.schemaVersion == 2) { "Unsupported enhancement schema" }
         require(manifest.id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid enhancement id" }
         require(manifest.name.isNotBlank() && manifest.version.isNotBlank()) { "Missing enhancement metadata" }
         if (manifest.status == EnhancementStatus.VERIFIED) {
@@ -138,13 +140,23 @@ object EnhancementManifestParser {
         require(manifest.match.gameCode.matches(Regex("[A-Z0-9]{4}"))) {
             "Game code must contain four uppercase ASCII letters or digits"
         }
-        require(manifest.match.headerChecksum != null || manifest.match.sha256.isNotEmpty()) {
-            "Enhancement must declare a ROM header checksum or SHA-256"
+        require(manifest.match.revision == null || manifest.match.revision >= 0) {
+            "Invalid ROM revision"
+        }
+        require(
+            manifest.match.headerChecksum != null ||
+                manifest.match.sha256.isNotEmpty() ||
+                manifest.match.raHashes.isNotEmpty(),
+        ) {
+            "Enhancement must declare a ROM header checksum, SHA-256, or RetroAchievements hash"
         }
         manifest.match.headerChecksum?.let {
             require(it.matches(Regex("[0-9A-Fa-f]{8}"))) { "Invalid ROM header checksum" }
         }
         require(manifest.match.sha256.all { it.matches(Regex("[0-9a-fA-F]{64}")) }) { "Invalid ROM SHA-256" }
+        require(manifest.match.raHashes.all { it.matches(Regex("[0-9a-fA-F]{32}")) }) {
+            "Invalid RetroAchievements hash"
+        }
         require(manifest.patches.map { it.file }.distinct().size == manifest.patches.size) {
             "Duplicate enhancement patch file"
         }
@@ -212,10 +224,14 @@ data class EnhancementRomIdentity(
     val gameCode: String,
     val headerChecksum: String?,
     val sha256: String,
+    val revision: Int? = null,
+    val raHash: String? = null,
 )
 
 fun EnhancementManifest.matches(identity: EnhancementRomIdentity): Boolean {
     return match.gameCode == identity.gameCode &&
+        (match.revision == null || match.revision == identity.revision) &&
         (match.headerChecksum == null || match.headerChecksum.equals(identity.headerChecksum, ignoreCase = true)) &&
-        (match.sha256.isEmpty() || identity.sha256.lowercase() in match.sha256.map(String::lowercase))
+        (match.sha256.isEmpty() || identity.sha256.lowercase() in match.sha256.map(String::lowercase)) &&
+        (match.raHashes.isEmpty() || identity.raHash?.lowercase() in match.raHashes.map(String::lowercase))
 }

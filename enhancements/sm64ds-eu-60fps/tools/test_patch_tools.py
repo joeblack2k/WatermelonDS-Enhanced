@@ -51,8 +51,48 @@ class PatchToolsTest(unittest.TestCase):
                 verify.verify_manifest_contract(path, patch)
 
     def test_source_only_manifest_is_not_a_concrete_addon(self):
-        with self.assertRaisesRegex(ValueError, "source-only"):
+        with self.assertRaisesRegex(ValueError, "unverified contract claims"):
             verify.verify_manifest_contract(HERE.parent / "manifest.example.json")
+
+    def test_source_only_manifest_binds_verified_payload_without_runtime_claims(self):
+        import json
+
+        manifest_path = HERE.parent / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="ascii"))
+        patch_path = HERE.parent / "patches" / "60fps-v10.ards"
+        verify.verify_manifest_contract(manifest_path, patch_path)
+        self.assertEqual(manifest["status"], "SOURCE_ONLY")
+        self.assertEqual(manifest["capabilities"], [])
+        self.assertEqual(len(manifest["patches"][0]["expectedOriginalWords"]), 8)
+        self.assertEqual(
+            {key for key, value in manifest["verification"].items() if value == "VERIFIED"},
+            {"guardedPayload", "payloadInput"},
+        )
+        self.assertEqual(len(patch_path.read_text(encoding="ascii").splitlines()), 937)
+
+    def test_five_regions_and_no_camera_or_widescreen_guard_overlap(self):
+        import json
+
+        payload = HERE.parent / "patches" / "60fps-v10.ards"
+        regions = verify.parse(payload)
+        self.assertEqual([len(guards) for guards, _ in regions], [13, 87, 87, 173, 174])
+        self.assertEqual([len(writes) for _, writes in regions], [174, 108, 108, 2, 1])
+
+        own = {
+            address.lower()
+            for address in json.loads((HERE.parent / "manifest.json").read_text())["patches"][0]
+            ["expectedOriginalWords"]
+        }
+        for package in ("sm64ds-eu-right-stick-camera", "sm64ds-eu-widescreen"):
+            manifest = json.loads(
+                (HERE.parent.parent / package / "manifest.json").read_text()
+            )
+            other = {
+                address.lower()
+                for patch in manifest["patches"]
+                for address in patch.get("expectedOriginalWords", {})
+            }
+            self.assertTrue(own.isdisjoint(other), package)
 
     def test_contract_rejects_cadence_only_and_missing_payload(self):
         import json

@@ -2,6 +2,7 @@ package me.magnum.enhancements
 
 import java.io.File
 import java.io.InputStream
+import java.security.MessageDigest
 import java.util.HashSet
 import java.util.UUID
 import java.util.zip.ZipInputStream
@@ -25,6 +26,14 @@ class EnhancementPackageInstaller(
                 val patchFile = File(packageContents, patch.file)
                 require(patchFile.isFile) {
                     "Missing enhancement patch file: ${patch.file}"
+                }
+                patch.sha256?.let { expected ->
+                    val actual = MessageDigest.getInstance("SHA-256")
+                        .digest(patchFile.readBytes())
+                        .joinToString("") { "%02x".format(it) }
+                    require(actual.equals(expected, ignoreCase = true)) {
+                        "Patch SHA-256 mismatch: ${patch.file}"
+                    }
                 }
                 when (patch.type) {
                     EnhancementPatchType.ACTION_REPLAY -> ActionReplayParser.parse(patchFile.readText())

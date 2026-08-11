@@ -73,21 +73,20 @@ def verify_manifest_contract(path: Path, patch_path: Path | None = None):
         for capability in manifest.get("capabilities", ())
     ):
         raise ValueError("emulator overclock is not a 60fps addon contract")
-    if manifest.get("status") != "VERIFIED":
-        raise ValueError("source-only manifest is not a concrete addon")
+    source_only = manifest.get("status") == "SOURCE_ONLY"
+    if manifest.get("status") not in {"SOURCE_ONLY", "VERIFIED"}:
+        raise ValueError("manifest must declare SOURCE_ONLY or VERIFIED status")
     verification = manifest.get("verification")
     if not isinstance(verification, dict):
         raise ValueError("missing verification contract")
-    missing = [
-        claim for claim in (*CONTRACT_CLAIMS, "guardedPayload")
-        if verification.get(claim) != "VERIFIED"
-    ]
+    required_claims = ("guardedPayload",) if source_only else CONTRACT_CLAIMS + ("guardedPayload",)
+    missing = [claim for claim in required_claims if verification.get(claim) != "VERIFIED"]
     if missing:
         raise ValueError(f"unverified contract claims: {', '.join(missing)}")
     if verification.get("payloadInput") != "VERIFIED":
         raise ValueError("missing revision-specific payload input")
     if not manifest.get("patches"):
-        raise ValueError("verified addon has no concrete payload")
+        raise ValueError("manifest has no concrete payload")
     if patch_path is None:
         return
     matching = [

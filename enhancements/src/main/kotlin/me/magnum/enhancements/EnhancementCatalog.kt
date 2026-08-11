@@ -1,6 +1,7 @@
 package me.magnum.enhancements
 
 import java.io.File
+import java.security.MessageDigest
 
 class EnhancementCatalog(manifests: List<EnhancementManifest>) {
     val manifests: List<EnhancementManifest> = manifests.sortedBy { it.id }
@@ -42,6 +43,17 @@ class EnhancementCatalog(manifests: List<EnhancementManifest>) {
                             val manifest = EnhancementManifestParser.parse(manifestFile.readText())
                             require(packageRoot.name == manifest.id) {
                                 "Enhancement directory does not match manifest id: ${packageRoot.name}"
+                            }
+                            manifest.patches.forEach { patch ->
+                                patch.sha256?.let { expected ->
+                                    val file = File(packageRoot, patch.file)
+                                    require(file.isFile) { "Missing enhancement patch file: ${patch.file}" }
+                                    val actual = MessageDigest.getInstance("SHA-256")
+                                        .digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+                                    require(actual.equals(expected, ignoreCase = true)) {
+                                        "Patch SHA-256 mismatch: ${patch.file}"
+                                    }
+                                }
                             }
                             manifest
                         }

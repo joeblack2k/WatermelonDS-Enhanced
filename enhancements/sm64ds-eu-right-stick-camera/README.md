@@ -10,19 +10,20 @@ that the emulator must provide:
 - guarded runtime overlay activation;
 - neutralization on reset, pause, save-state load, disconnect and teardown.
 
-The package contract reserves an Action Replay payload slot for the documented
-European Slot-2 analog runtime code. No concrete ROM payload is supplied here.
-The camera runtime patch must be generated from a locally supplied, legally
-owned ARM9 image and must refuse to run when any expected original word
-differs. The placeholder header checksum in the manifest must be replaced with
-the supported ROM's header value before the package can match a ROM.
+The 61-line camera Action Replay payload remains present as reference metadata,
+but this addon is source-only for R3 recenter. The existing payload has no
+verified edge-trigger implementation and must not be installed as if it did.
+No ROM, ARM9 image, object file, or private path is distributed.
 
-The checked-in assembly source is only a build input. Generate
-`patches/camera.ards`, `patches/camera.overlay`, and the expected-word map from
-the locally supplied ARM9 image and object file. Copy that generated map into
-the manifest before installing the package. The source and generated camera
-payloads are not part of the generic WatermelonDS input or launch path.
+The checked-in assembly source remains a rebuild input. A future R3 fix must
+read Slot-2 offset `0x06`, compare it with a proven persistent addon-state
+slot, update that slot, and reset yaw only on a new sequence. The existing
+evidence does not prove such a slot or the required payload words, so the
+builder must fail closed until a supported ARM9 image and object are supplied.
+The emulator owns lifecycle neutralization and axis delivery; this package owns
+only the generic camera protocol and payload selection.
 
-The analog payload slot refers to the existing EU `ASMP` patch documented in
-`profiles/SM64DS_ANALOG_AR_CODE.md`; a revision-validated payload must be
-generated and supplied separately before this example package is installable.
+The analog code is attributed to AM64DS Europe by LRFLEW. Redistribution
+licensing of that upstream Action Replay payload is not established by this
+repository, so release redistribution requires a license confirmation. The
+camera payload provenance is ThorDS project metadata.

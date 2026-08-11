@@ -35,6 +35,12 @@ class EnhancementRomIdentityResolver @Inject constructor(
             } else {
                 ""
             }
-            EnhancementRomIdentity(info.gameCode, header, sha)
+            EnhancementRomIdentity(
+                info.gameCode,
+                header,
+                sha,
+                revision = info.revision,
+                raHash = rom.retroAchievementsHash,
+            )
         }
 }

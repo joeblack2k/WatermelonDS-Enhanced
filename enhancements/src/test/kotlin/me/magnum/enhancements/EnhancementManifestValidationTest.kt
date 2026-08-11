@@ -32,6 +32,20 @@ class EnhancementManifestValidationTest {
     }
 
     @Test
+    fun schemaV2ParsesWhileSchemaV1RemainsCompatible() {
+        val parsed = EnhancementManifestParser.parse(
+            """{"schemaVersion":2,"id":"v2.addon","name":"V2","version":"1",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
+                "status":"SOURCE_ONLY"}""".trimIndent(),
+        )
+        assertTrue(parsed.schemaVersion == 2)
+        assertTrue(EnhancementManifestParser.parse(
+            """{"schemaVersion":1,"id":"v1.addon","name":"V1","version":"1",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"}}""",
+        ).schemaVersion == 1)
+    }
+
+    @Test
     fun verifiedManifestRequiresEveryClaimAndPayload() {
         val incomplete = EnhancementManifest(
             id = "verified.addon",
@@ -102,6 +116,35 @@ class EnhancementManifestValidationTest {
                 assertTrue(error.message.orEmpty().contains("Game code") ||
                     error.message.orEmpty().contains("checksum"))
             }
+        }
+    }
+
+    @Test
+    fun acceptsRevisionAndRetroAchievementsIdentity() {
+        EnhancementManifest(
+            id = "ra.addon",
+            name = "RA",
+            version = "1.0.0",
+            match = EnhancementMatch(
+                gameCode = "ASMP",
+                revision = 0,
+                raHashes = setOf("ba3c4052e00c5cc31df5d5534c39de1b"),
+            ),
+        ).also(EnhancementManifestParser::validate)
+    }
+
+    @Test
+    fun rejectsMalformedRetroAchievementsHash() {
+        try {
+            EnhancementManifest(
+                id = "bad-ra.addon",
+                name = "Bad RA",
+                version = "1.0.0",
+                match = EnhancementMatch("ASMP", raHashes = setOf("not-a-hash")),
+            ).also(EnhancementManifestParser::validate)
+            fail("Expected malformed RA hash to be rejected")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("RetroAchievements"))
         }
     }
 

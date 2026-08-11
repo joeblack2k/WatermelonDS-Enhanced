@@ -27,6 +27,12 @@ enhanced_smooth_camera_hook:
 	ldrh	r2, [r0, #0x0c]
 	tst	r2, #1
 	beq	.L_continue
+	/*
+	 * R3 recenter is deliberately not emitted until the addon-state slot for
+	 * last-processed recenterSequence is proven. A level-triggered reset here
+	 * would reset yaw every frame, and the old strh form used an unencodable
+	 * immediate offset.
+	 */
 	ldr	r3, .L_free_camera_mode
 	ldr	r1, [r8, #0x13c]
 	cmp	r1, r3
