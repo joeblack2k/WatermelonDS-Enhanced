@@ -70,7 +70,7 @@ class EnhancementPackageInstallerTest {
         val installed = EnhancementPackageInstaller(root).install(
             zipOf(
                 "bundle/manifest.json" to manifest,
-                "bundle/payload/test.ips" to "patch",
+                "bundle/payload/test.ips" to validIps(),
             ),
         )
 
@@ -190,7 +190,7 @@ class EnhancementPackageInstallerTest {
         EnhancementPackageInstaller(root).install(
             zipOf(
                 "bundle/manifest.json" to manifest,
-                "bundle/payload/test.ips" to "patch",
+                "bundle/payload/test.ips" to validIps(),
             ),
         )
 
@@ -369,6 +369,8 @@ class EnhancementPackageInstallerTest {
         {"schemaVersion":1,"id":"$id","name":"Test","version":"$version",
          "match":{"gameCode":"$gameCode","headerChecksum":"12345678"},"patches":$patches}
     """.trimIndent()
+
+    private fun validIps() = "PATCH\u0000\u0000\u0000\u0000\u0001\u0001EOF"
 
     private fun zipOf(vararg entries: Pair<String, String>): ByteArrayInputStream {
         val bytes = ByteArrayOutputStream()

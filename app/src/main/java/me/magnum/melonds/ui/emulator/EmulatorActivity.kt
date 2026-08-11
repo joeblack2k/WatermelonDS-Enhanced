@@ -430,6 +430,7 @@ class EmulatorActivity : AppCompatActivity() {
     )
 
     private val rewindSaveStateAdapter = RewindSaveStateAdapter {
+        if (::nativeInputListener.isInitialized) nativeInputListener.neutralizeTransientInputs()
         viewModel.rewindToState(it)
         closeRewindWindow()
     }
@@ -1048,6 +1049,7 @@ class EmulatorActivity : AppCompatActivity() {
                                 if (isSaving) {
                                     viewModel.saveStateToSlot(slot)
                                 } else {
+                                    if (::nativeInputListener.isInitialized) nativeInputListener.neutralizeTransientInputs()
                                     viewModel.loadStateFromSlot(slot)
                                 }
                             }

@@ -9,7 +9,7 @@ class CameraAssemblyProtocolTest {
     @Test
     fun assemblyDoesNotClaimAnUnverifiedRecenterImplementation() {
         val source = File(".").walkTopDown()
-            .first { it.path.endsWith("sm64ds-eu-right-stick-camera/runtime/sm64ds_eu_smooth_camera.s") }
+            .first { it.path.endsWith("sm64ds.eu.right-stick-camera/runtime/sm64ds_eu_smooth_camera.s") }
             .readText()
         assertTrue(source.contains("last-processed recenterSequence"))
         assertFalse(source.contains("ldrh	r2, [r0, #0x06]"))

@@ -11,7 +11,7 @@ class EnhancementManifestValidationTest {
     @Test
     fun allExampleManifestsParseWithTheProductionParser() {
         val root = listOf(Path.of("enhancements"), Path.of("."))
-            .map { it.resolve("sm64ds-eu-60fps") }
+            .map { it.resolve("sm64ds.eu.60fps") }
             .first { Files.isDirectory(it) }
             .parent
         val examples = Files.walk(root).use { paths ->
@@ -34,7 +34,7 @@ class EnhancementManifestValidationTest {
     }
 
     @Test
-    fun legacyManifestWithoutStatusRemainsInstallable() {
+    fun legacyManifestWithoutStatusPreservesProvenInstallableSemantics() {
         val legacy = EnhancementManifest(
             id = "legacy.addon",
             name = "Legacy",
@@ -47,20 +47,47 @@ class EnhancementManifestValidationTest {
                 "match":{"gameCode":"ASMP","headerChecksum":"12345678"}}""".trimIndent(),
         )
         assertTrue(parsed.status == null)
+        assertTrue(parsed.isInstallable())
     }
 
     @Test
-    fun schemaV2ParsesWhileSchemaV1RemainsCompatible() {
+    fun schemaV3RequiresDistributionStatusAndLegacySchemasRemainNonDistributable() {
+        try {
+            EnhancementManifestParser.parse(
+                """{"schemaVersion":3,"id":"missing.status","name":"Missing","version":"1",
+                    "match":{"gameCode":"ASMP","headerChecksum":"12345678"}}""".trimIndent(),
+            )
+            fail("Expected missing distribution status to be rejected")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("distributionStatus"))
+        }
+        val v3 = EnhancementManifestParser.parse(
+            """{"schemaVersion":3,"id":"v3.addon","name":"V3","version":"1",
+                "distributionStatus":"SOURCE_ONLY",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
+                "verification":{"payloadInput":"VERIFIED"}}""",
+        )
+        assertEquals(EnhancementDistributionStatus.SOURCE_ONLY, v3.distributionStatus)
+        assertTrue(!v3.isInstallable())
+        val distributable = EnhancementManifestParser.parse(
+            """{"schemaVersion":3,"id":"installable.addon","name":"Installable","version":"1",
+                "distributionStatus":"INSTALLABLE",
+                "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
+                "verification":{"cadence":"UNVERIFIED"}}""",
+        )
+        assertTrue(distributable.isInstallable())
+        assertEquals(EnhancementClaim.UNVERIFIED, distributable.verification.cadence)
         val parsed = EnhancementManifestParser.parse(
             """{"schemaVersion":2,"id":"v2.addon","name":"V2","version":"1",
                 "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
                 "status":"SOURCE_ONLY"}""".trimIndent(),
         )
         assertTrue(parsed.schemaVersion == 2)
+        assertTrue(!parsed.isInstallable())
         assertTrue(EnhancementManifestParser.parse(
             """{"schemaVersion":1,"id":"v1.addon","name":"V1","version":"1",
                 "match":{"gameCode":"ASMP","headerChecksum":"12345678"}}""",
-        ).schemaVersion == 1)
+        ).let { it.schemaVersion == 1 && it.isInstallable() })
     }
 
     @Test
@@ -70,6 +97,7 @@ class EnhancementManifestValidationTest {
             name = "Verified",
             version = "1.0.0",
             status = EnhancementStatus.VERIFIED,
+            distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
             match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
             verification = EnhancementVerification(
                 guardedPayload = EnhancementClaim.VERIFIED,

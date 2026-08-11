@@ -3,6 +3,9 @@ package me.magnum.enhancements
 data class EnhancementSession(
     val addOns: List<EnhancementManifest>,
 ) {
+    fun retain(ids: Set<String>): EnhancementSession {
+        return EnhancementSession(addOns.filter { it.id in ids })
+    }
     private val runtimeAddOns = addOns.filter { it.status != EnhancementStatus.SOURCE_ONLY }
     val capabilities: Set<EnhancementCapability> = runtimeAddOns.flatMap { it.capabilities }.toSet()
     val hardcoreCompatible: Boolean = runtimeAddOns.all { it.hardcoreCompatible }
@@ -71,6 +74,31 @@ data class EnhancementSession(
     }
 
     fun close() = Unit
+}
+
+data class EnhancementActivationRequest(
+    val addOnId: String,
+    val guards: List<EnhancementRuntimeGuard>,
+    val overlay: List<EnhancementOverlayWord>,
+)
+
+data class EnhancementActivationResult(
+    val activeAddOnIds: Set<String>,
+    val failedAddOnIds: Set<String>,
+)
+
+fun activateEnhancements(
+    requests: List<EnhancementActivationRequest>,
+    validateGuard: (EnhancementRuntimeGuard) -> Boolean,
+    applyOverlay: (List<EnhancementOverlayWord>) -> Boolean,
+): EnhancementActivationResult {
+    val prepared = requests.filter { request -> request.guards.all(validateGuard) }
+    val active = prepared.filter { request -> applyOverlay(request.overlay) }
+    val activeIds = active.mapTo(mutableSetOf()) { it.addOnId }
+    return EnhancementActivationResult(
+        activeAddOnIds = activeIds,
+        failedAddOnIds = requests.mapTo(mutableSetOf()) { it.addOnId } - activeIds,
+    )
 }
 
 enum class EnhancementPresentationMode {

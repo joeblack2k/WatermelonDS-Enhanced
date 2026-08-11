@@ -10,8 +10,9 @@ data class EnhancementManifest(
     val name: String,
     val version: String,
     val author: String = "",
-    // null is the legacy installable-manifest format.
+    // Retained for runtime compatibility with pre-v3 callers.
     val status: EnhancementStatus? = null,
+    val distributionStatus: EnhancementDistributionStatus? = null,
     val match: EnhancementMatch,
     val capabilities: Set<EnhancementCapability> = emptySet(),
     val patches: List<EnhancementPatch> = emptyList(),
@@ -34,7 +35,19 @@ enum class EnhancementStatus {
     VERIFIED,
 }
 
-fun EnhancementManifest.isInstallable(): Boolean = status != EnhancementStatus.SOURCE_ONLY
+fun EnhancementManifest.isInstallable(): Boolean =
+    if (schemaVersion >= 3) {
+        distributionStatus == EnhancementDistributionStatus.INSTALLABLE
+    } else {
+        distributionStatus == EnhancementDistributionStatus.INSTALLABLE ||
+            (distributionStatus == null && status != EnhancementStatus.SOURCE_ONLY)
+    }
+
+@Serializable
+enum class EnhancementDistributionStatus {
+    SOURCE_ONLY,
+    INSTALLABLE,
+}
 
 @Serializable
 enum class EnhancementClaim {
@@ -60,6 +73,10 @@ data class EnhancementVerification(
     val guardedPayload: EnhancementClaim = EnhancementClaim.UNVERIFIED,
     val payloadInput: EnhancementPayloadInput = EnhancementPayloadInput.MISSING,
 )
+
+fun EnhancementManifest.verificationSummary(): String =
+    "payload=${verification.payloadInput}, guarded=${verification.guardedPayload}, " +
+        "cadence=${verification.cadence}, gameplay=${verification.gameplayPhysics}"
 
 @Serializable
 data class EnhancementMatch(
@@ -117,7 +134,17 @@ object EnhancementManifestParser {
     }
 
     fun validate(manifest: EnhancementManifest) {
-        require(manifest.schemaVersion == 1 || manifest.schemaVersion == 2) { "Unsupported enhancement schema" }
+        require(manifest.schemaVersion in 1..3) { "Unsupported enhancement schema" }
+        if (manifest.schemaVersion >= 3) {
+            require(manifest.distributionStatus != null) {
+                "Schema v3 requires distributionStatus"
+            }
+            require(
+                manifest.status == null ||
+                    (manifest.status == EnhancementStatus.SOURCE_ONLY) ==
+                    (manifest.distributionStatus == EnhancementDistributionStatus.SOURCE_ONLY),
+            ) { "Contradictory legacy and v3 distribution status" }
+        }
         require(manifest.id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid enhancement id" }
         require(manifest.name.isNotBlank() && manifest.version.isNotBlank()) { "Missing enhancement metadata" }
         if (manifest.status == EnhancementStatus.VERIFIED) {
@@ -162,6 +189,7 @@ object EnhancementManifestParser {
         require(manifest.patches.map { it.file }.distinct().size == manifest.patches.size) {
             "Duplicate enhancement patch file"
         }
+        require(manifest.patches.size <= MAX_PATCHES) { "Too many enhancement patches" }
         manifest.patches.forEach {
             require(it.sha256 == null || it.sha256.matches(Regex("[0-9a-fA-F]{64}"))) {
                 "Invalid patch SHA-256"
@@ -187,6 +215,9 @@ object EnhancementManifestParser {
                 require(it.expectedOriginalWords.values.all { word -> word.matches(Regex("0x[0-9a-fA-F]{8}")) }) {
                     "Invalid guarded patch word"
                 }
+                require(it.expectedOriginalWords.size <= MAX_OVERLAY_WORDS) {
+                    "Too many guarded patch words"
+                }
             }
         }
         if (manifest.capabilities.contains(EnhancementCapability.RUNTIME_INPUT_PROTOCOL)) {
@@ -204,6 +235,9 @@ object EnhancementManifestParser {
             "Enhancement cannot conflict with itself"
         }
     }
+
+    private const val MAX_PATCHES = 256
+    private const val MAX_OVERLAY_WORDS = 4096
 }
 
 data class EnhancementRuntimeInput(

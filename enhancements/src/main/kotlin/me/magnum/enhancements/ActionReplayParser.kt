@@ -14,7 +14,10 @@ object ActionReplayParser {
                 words.joinToString(" ") { it.uppercase() }
             }
             .toList()
+            .also { require(it.size <= MAX_LINES) { "Too many Action Replay lines" } }
         require(lines.isNotEmpty()) { "Action Replay payload is empty" }
         return lines.joinToString("\n")
     }
+
+    private const val MAX_LINES = 4096
 }

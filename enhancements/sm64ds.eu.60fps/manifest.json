@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "sm64ds.eu.60fps",
   "name": "SM64DS EU 60 FPS",
   "version": "0.1.0",
   "author": "WatermelonDS Enhanced contributors",
   "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
   "match": {
     "gameCode": "ASMP",
     "revision": 0,

@@ -12,6 +12,15 @@ import javax.inject.Inject
 class EnhancementCatalogLoader @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    fun inspect(packageUri: Uri): EnhancementManifest {
+        val input = requireNotNull(context.contentResolver.openInputStream(packageUri)) {
+            "Unable to open enhancement package"
+        }
+        return input.use {
+            EnhancementPackageInstaller(File(context.filesDir, "Enhancements")).inspect(it)
+        }
+    }
+
     fun install(packageUri: Uri, replace: Boolean = false): EnhancementManifest {
         val input = requireNotNull(context.contentResolver.openInputStream(packageUri)) {
             "Unable to open enhancement package"

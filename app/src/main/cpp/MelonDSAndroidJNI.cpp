@@ -2423,8 +2423,12 @@ Java_me_magnum_melonds_MelonEmulator_applyEnhancedRuntimeOverlay(
     JNIEnv* env, jobject thiz, jintArray addresses, jintArray expectedWords, jintArray values)
 {
     (void)thiz;
+    if (addresses == nullptr || expectedWords == nullptr || values == nullptr) {
+        return JNI_FALSE;
+    }
     const jsize count = env->GetArrayLength(addresses);
-    if (env->GetArrayLength(expectedWords) != count || env->GetArrayLength(values) != count) {
+    if (count <= 0 || count > 4096 ||
+        env->GetArrayLength(expectedWords) != count || env->GetArrayLength(values) != count) {
         return JNI_FALSE;
     }
     std::vector<jint> addressValues(count);

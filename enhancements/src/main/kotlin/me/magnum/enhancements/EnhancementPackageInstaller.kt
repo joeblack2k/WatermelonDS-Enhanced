@@ -11,6 +11,16 @@ class EnhancementPackageInstaller(
     private val root: File,
     private val rename: (File, File) -> Boolean = File::renameTo,
 ) {
+    fun inspect(input: InputStream): EnhancementManifest {
+        val staging = File(root, ".inspecting-${UUID.randomUUID()}").also { it.mkdirs() }
+        return try {
+            extractSafely(input, staging)
+            EnhancementManifestParser.parse(findManifest(staging).readText())
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
     fun install(input: InputStream, replace: Boolean = false): EnhancementManifest {
         root.mkdirs()
         val staging = File(root, ".installing-${UUID.randomUUID()}")
@@ -30,6 +40,7 @@ class EnhancementPackageInstaller(
                 require(patchFile.isFile) {
                     "Missing enhancement patch file: ${patch.file}"
                 }
+                require(patch.file == canonicalRelativePath(patch.file)) { "Unsafe enhancement patch path" }
                 patch.sha256?.let { expected ->
                     val actual = MessageDigest.getInstance("SHA-256")
                         .digest(patchFile.readBytes())
@@ -42,8 +53,8 @@ class EnhancementPackageInstaller(
                     EnhancementPatchType.ACTION_REPLAY -> ActionReplayParser.parse(patchFile.readText())
                     EnhancementPatchType.RUNTIME_OVERLAY ->
                         EnhancementOverlayParser.parse(patchFile.readText(), patch.expectedOriginalWords)
-                    EnhancementPatchType.IPS,
-                    EnhancementPatchType.BPS -> Unit
+                    EnhancementPatchType.IPS -> EnhancementPatchApplier.validateIps(patchFile.readBytes())
+                    EnhancementPatchType.BPS -> EnhancementPatchApplier.validateBps(patchFile.readBytes())
                 }
             }
             val backupDirectory = if (replace && packageDirectory.exists()) {

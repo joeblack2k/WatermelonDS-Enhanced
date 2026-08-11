@@ -1,9 +1,11 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "sm64ds.eu.widescreen",
   "name": "SM64DS EU widescreen",
   "version": "1.0.0",
   "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
   "match": {
     "gameCode": "ASMP",
     "revision": 0,

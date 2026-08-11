@@ -177,6 +177,7 @@ import me.magnum.melonds.ui.emulator.component.RaNativeRetryResultMapper
 import me.magnum.melonds.ui.emulator.component.RaSubmissionContextValidator
 import me.magnum.melonds.ui.emulator.component.RaSessionStopGate
 import me.magnum.melonds.ui.emulator.component.RaRuntimeAuthenticationPolicy
+import me.magnum.melonds.ui.emulator.component.EmulatorSessionFallbackCoordinator
 import me.magnum.melonds.impl.retroachievements.offline.RetroAchievementsImageCacheWarmer
 import me.magnum.melonds.impl.retroachievements.offline.SmartSyncSkipReason
 import me.magnum.melonds.impl.retroachievements.offline.SmartSyncEngine
@@ -188,6 +189,8 @@ import me.magnum.enhancements.createSession
 import me.magnum.enhancements.EnhancementRuntimeInput
 import me.magnum.enhancements.EnhancementPresentationState
 import me.magnum.enhancements.EnhancementStatus
+import me.magnum.enhancements.EnhancementActivationRequest
+import me.magnum.enhancements.EnhancementActivationResult
 import me.magnum.melonds.ui.emulator.component.RetroAchievementsSubmissionHandler
 import me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption
 import me.magnum.melonds.ui.emulator.model.RumbleEvent
@@ -277,6 +280,11 @@ class EmulatorViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val sessionCoroutineScope = EmulatorSessionCoroutineScope()
+    private val sessionFallbackCoordinator = EmulatorSessionFallbackCoordinator(
+        retireSession = sessionCoroutineScope::cancel,
+        startSession = sessionCoroutineScope::notifyNewSessionStarted,
+        launchOnSession = sessionCoroutineScope::launch,
+    )
 
     data class HeavyShaderCompileRequest(
         val presetName: String,
@@ -754,7 +762,7 @@ class EmulatorViewModel @Inject constructor(
         }
     }
 
-    private suspend fun launchRom(rom: Rom) = coroutineScope {
+    private suspend fun launchRom(rom: Rom, allowEnhancedFallback: Boolean = true) = coroutineScope {
         try {
             _emulatorState.value = EmulatorState.LoadingRom()
             currentRom = rom
@@ -779,8 +787,20 @@ class EmulatorViewModel @Inject constructor(
                 null
             }
             _activeRuntimeInputProtocol.value = activeEnhancementSession?.runtimeInput
-            activeEnhancedRomFile = activeEnhancementSession?.let {
-                enhancedRomMaterializer.prepare(rom, it)
+            try {
+                activeEnhancedRomFile = activeEnhancementSession?.let {
+                    enhancedRomMaterializer.prepare(rom, it)
+                }
+            } catch (exception: Throwable) {
+                if (exception is CancellationException || !allowEnhancedFallback || activeEnhancementSession == null) {
+                    throw exception
+                }
+                Log.w("EmulatorViewModel", "Failed to prepare enhanced ROM", exception)
+                resetEmulatorState(EmulatorState.LoadingRom())
+                sessionFallbackCoordinator.launchOnFreshSession {
+                    launchRom(rom.copy(config = rom.config.copy(enabledEnhancements = emptySet())), false)
+                }
+                return@coroutineScope
             }
             val materializedRom = activeEnhancedRomFile?.let {
                 rom.copy(
@@ -793,10 +813,8 @@ class EmulatorViewModel @Inject constructor(
             } else {
                 materializedRom
             }
-            emulatorManager.setEnhancedRuntimeGuards(activeEnhancementSession?.runtimeGuards.orEmpty())
-            emulatorManager.setEnhancedRuntimeOverlay(
-                activeEnhancementSession?.let { enhancedOverlayLoader.load(it) }.orEmpty(),
-            )
+            emulatorManager.setEnhancedRuntimeGuards(emptyList())
+            emulatorManager.setEnhancedRuntimeOverlay(emptyList())
             val isRetroAchievementsEnabledForLaunch = isRetroAchievementsEnabledForLaunch(launchRom)
             val endpointSnapshot = if (isRetroAchievementsEnabledForLaunch) {
                 retroAchievementsEndpointProvider.beginSession()
@@ -841,6 +859,7 @@ class EmulatorViewModel @Inject constructor(
             isHardcoreEligibleAfterOnlineStart = launchDecision.isHardcoreEligibleAfterOnlineStart
             startedSessionOnlineLive = launchDecision.networkMode == RetroAchievementsNetworkMode.ONLINE_LIVE
 
+            val baseCheats = romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()
             startEmulatorSession(
                 sessionType = EmulatorSession.SessionType.RomSession(launchRom),
                 areRetroAchievementsEnabled = isRetroAchievementsEnabledForLaunch,
@@ -864,8 +883,7 @@ class EmulatorViewModel @Inject constructor(
                 )
             }
 
-            val cheats = (romInfo?.let { getRomEnabledCheats(it) } ?: emptyList()) +
-                (activeEnhancementSession?.let { enhancedCheatLoader.load(it) } ?: emptyList())
+            val cheats = baseCheats
             confirmRetroArchShaderCompile(launchRom.config)
             val result = emulatorManager.loadRom(launchRom, cheats)
             when (result) {
@@ -877,6 +895,50 @@ class EmulatorViewModel @Inject constructor(
                     _emulatorState.value = EmulatorState.RomLoadError
                 }
                 is RomLaunchResult.LaunchSuccessful -> {
+                    val session = activeEnhancementSession
+                    if (session != null) {
+                        val preparationFailures = mutableSetOf<String>()
+                        val requests = session.addOns.mapNotNull { addOn ->
+                            runCatching {
+                                val single = EnhancementSession(listOf(addOn))
+                                EnhancementActivationRequest(
+                                    addOnId = addOn.id,
+                                    guards = single.runtimeGuards,
+                                    overlay = enhancedOverlayLoader.load(single),
+                                )
+                            }.onFailure {
+                                preparationFailures += addOn.id
+                                Log.w("EmulatorViewModel", "Failed to prepare enhancement '${addOn.id}'", it)
+                            }.getOrNull()
+                        }
+                        val activation = if (preparationFailures.isEmpty()) {
+                            emulatorManager.activateEnhancedAddOns(requests)
+                        } else {
+                            EnhancementActivationResult(emptySet(), preparationFailures)
+                        }
+                        val enhancedSession = session.retain(activation.activeAddOnIds)
+                        val enhancedCheats = runCatching {
+                            enhancedCheatLoader.load(enhancedSession)
+                        }.onFailure {
+                            Log.w("EmulatorViewModel", "Failed to load enhanced cheats", it)
+                        }.getOrNull()
+                        if (activation.failedAddOnIds.isNotEmpty() || enhancedCheats == null) {
+                            if (!allowEnhancedFallback) {
+                                error("Enhanced add-on activation failed after fallback")
+                            }
+                            resetEmulatorState(EmulatorState.LoadingRom())
+                            val originalRom = rom.copy(
+                                config = rom.config.copy(enabledEnhancements = emptySet()),
+                            )
+                            sessionFallbackCoordinator.launchOnFreshSession {
+                                launchRom(originalRom, allowEnhancedFallback = false)
+                            }
+                            return@coroutineScope
+                        }
+                        activeEnhancementSession = enhancedSession
+                        _activeRuntimeInputProtocol.value = activeEnhancementSession?.runtimeInput
+                        emulatorManager.updateCheats(baseCheats + enhancedCheats)
+                    }
                     if (!result.isGbaLoadSuccessful) {
                         _toastEvent.tryEmit(ToastEvent.GbaLoadFailed)
                     }
@@ -2737,7 +2799,7 @@ class EmulatorViewModel @Inject constructor(
                 previousPendingStore.cleanup()
             }
         }
-        sessionCoroutineScope.notifyNewSessionStarted()
+        sessionFallbackCoordinator.resetSession()
         leaderboardAttemptCoordinator.reset()
         leaderboardTrackerUpdateLogLimiter.resetAll()
         emulatorSession.reset()

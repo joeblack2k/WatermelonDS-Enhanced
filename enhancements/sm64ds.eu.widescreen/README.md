@@ -1,6 +1,6 @@
 # SM64DS EU Widescreen
 
-This is the installable package for the European Super Mario 64 DS widescreen
+This is the source-only package for the European Super Mario 64 DS widescreen
 enhancement.
 
 The package targets `ASMP`, revision 0, with RetroAchievements system hash

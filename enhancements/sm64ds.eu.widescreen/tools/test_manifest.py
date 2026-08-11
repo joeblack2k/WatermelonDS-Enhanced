@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression checks for the installable widescreen package contract."""
+"""Regression checks for the source-only widescreen package contract."""
 
 from __future__ import annotations
 
@@ -25,14 +25,14 @@ def main() -> int:
     assert manifest["match"]["raHashes"] == ["ba3c4052e00c5cc31df5d5534c39de1b"]
     assert manifest["capabilities"] == ["LAYER_AWARE_PRESENTATION"]
     assert manifest.get("requiresCapabilities", []) == []
-    assert manifest.get("status") != "SOURCE_ONLY"
+    assert manifest["distributionStatus"] == "SOURCE_ONLY"
     assert all("THOR" not in capability for capability in manifest["capabilities"])
     assert set(manifest.get("requiresCapabilities", [])).issubset(
         manifest["capabilities"]
     )
     assert manifest["id"] not in manifest.get("conflictsWith", [])
     camera = json.loads(
-        (ROOT.parent / "sm64ds-eu-right-stick-camera" / "manifest.json").read_text()
+        (ROOT.parent / "sm64ds.eu.right-stick-camera" / "manifest.json").read_text()
     )
     assert not (
         set(manifest["capabilities"]) & set(camera.get("capabilities", []))

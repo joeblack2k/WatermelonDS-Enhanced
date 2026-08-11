@@ -11,8 +11,9 @@ class EnhancementCatalogTest {
     @Test
     fun installableMatchesExcludeSourceOnlyManifests() {
         val sourceOnly = EnhancementManifestParser.parse(manifest("source.only"))
-            .copy(status = EnhancementStatus.SOURCE_ONLY)
+            .copy(schemaVersion = 3, distributionStatus = EnhancementDistributionStatus.SOURCE_ONLY)
         val installable = EnhancementManifestParser.parse(manifest("installable"))
+            .copy(schemaVersion = 3, distributionStatus = EnhancementDistributionStatus.INSTALLABLE)
         val catalog = EnhancementCatalog(listOf(sourceOnly, installable))
 
         assertEquals(
@@ -29,7 +30,8 @@ class EnhancementCatalogTest {
         val hash = MessageDigest.getInstance("SHA-256").digest("different".toByteArray())
             .joinToString("") { "%02x".format(it) }
         File(packageRoot, "manifest.json").writeText(
-            """{"schemaVersion":2,"id":"hashed.addon","name":"Hashed","version":"1",
+            """{"schemaVersion":3,"id":"hashed.addon","name":"Hashed","version":"1",
+                "distributionStatus":"SOURCE_ONLY",
                 "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
                 "patches":[{"type":"ACTION_REPLAY","file":"patch.ards","provenance":"test","sha256":"$hash"}]}""",
         )
@@ -159,6 +161,41 @@ class EnhancementCatalogTest {
         )
     }
 
+    @Test
+    fun checkedInPackagesHaveCanonicalIdsAndRemainSourceOnly() {
+        val root = listOf(File("enhancements"), File("."))
+            .map { File(it, "sm64ds.eu.60fps") }
+            .first { it.isDirectory }
+            .parentFile
+        val catalog = EnhancementCatalog.loadFromRoots(listOf(root))
+        assertEquals(
+            listOf("sm64ds.eu.60fps", "sm64ds.eu.right-stick-camera", "sm64ds.eu.widescreen"),
+            catalog.manifests.map { it.id },
+        )
+        catalog.manifests.forEach {
+            assertEquals(EnhancementDistributionStatus.SOURCE_ONLY, it.distributionStatus)
+            assertTrue(!it.isInstallable())
+        }
+    }
+
+    @Test
+    fun revisionMismatchFailsClosedEvenWhenGameCodeMatches() {
+        val manifest = EnhancementManifest(
+            schemaVersion = 3,
+            id = "exact.addon",
+            name = "Exact",
+            version = "1.0.0",
+            distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
+            match = EnhancementMatch("ASMP", revision = 0, raHashes = setOf("ba3c4052e00c5cc31df5d5534c39de1b")),
+        )
+        val catalog = EnhancementCatalog(listOf(manifest))
+        assertTrue(
+            catalog.installableMatching(
+                EnhancementRomIdentity("ASMP", null, "", revision = 1, raHash = "ba3c4052e00c5cc31df5d5534c39de1b"),
+            ).isEmpty(),
+        )
+    }
+
     private fun writeManifest(root: File, id: String, contents: String = manifest(id)) {
         val packageRoot = File(root, id)
         packageRoot.mkdirs()
@@ -167,10 +204,11 @@ class EnhancementCatalogTest {
 
     private fun manifest(id: String) = """
         {
-          "schemaVersion": 1,
+          "schemaVersion": 3,
           "id": "$id",
           "name": "Test",
           "version": "1.0.0",
+          "distributionStatus": "SOURCE_ONLY",
           "match": {"gameCode": "ASMP", "headerChecksum": "12345678"}
         }
     """.trimIndent()

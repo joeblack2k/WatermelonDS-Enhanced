@@ -2842,7 +2842,9 @@ void MelonInstance::setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 
 
 bool MelonInstance::validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const
 {
-    return nds != nullptr && nds->ARM9Read32(address) == expectedWord;
+    return nds != nullptr && address % 4 == 0 &&
+        address >= 0x02000000 && address <= 0x023FFFFC &&
+        nds->ARM9Read32(address) == expectedWord;
 }
 
 bool MelonInstance::applyEnhancedRuntimeOverlay(
@@ -2850,10 +2852,19 @@ bool MelonInstance::applyEnhancedRuntimeOverlay(
     const std::vector<u32>& expectedWords,
     const std::vector<u32>& values)
 {
-    if (nds == nullptr || addresses.size() != expectedWords.size() || addresses.size() != values.size()) {
+    constexpr u32 MainRamStart = 0x02000000;
+    constexpr u32 MainRamEnd = 0x02400000;
+    constexpr std::size_t MaxOverlayWords = 4096;
+    if (nds == nullptr || addresses.empty() || addresses.size() > MaxOverlayWords ||
+        addresses.size() != expectedWords.size() || addresses.size() != values.size()) {
         return false;
     }
     for (std::size_t index = 0; index < addresses.size(); ++index) {
+        if (addresses[index] % 4 != 0 ||
+            addresses[index] < MainRamStart ||
+            addresses[index] > MainRamEnd - sizeof(u32)) {
+            return false;
+        }
         const u32 currentWord = nds->ARM9Read32(addresses[index]);
         if (currentWord != expectedWords[index] && currentWord != values[index]) {
             return false;

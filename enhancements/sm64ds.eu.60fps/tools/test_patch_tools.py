@@ -83,7 +83,7 @@ class PatchToolsTest(unittest.TestCase):
             for address in json.loads((HERE.parent / "manifest.json").read_text())["patches"][0]
             ["expectedOriginalWords"]
         }
-        for package in ("sm64ds-eu-right-stick-camera", "sm64ds-eu-widescreen"):
+        for package in ("sm64ds.eu.right-stick-camera", "sm64ds.eu.widescreen"):
             manifest = json.loads(
                 (HERE.parent.parent / package / "manifest.json").read_text()
             )

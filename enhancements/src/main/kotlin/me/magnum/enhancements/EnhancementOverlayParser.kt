@@ -8,6 +8,7 @@ data class EnhancementOverlayWord(
 
 object EnhancementOverlayParser {
     fun parse(text: String, expectedOriginalWords: Map<String, String>): List<EnhancementOverlayWord> {
+        require(expectedOriginalWords.size <= MAX_WORDS) { "Too many runtime overlay guards" }
         return text.lineSequence()
             .map { it.substringBefore('#').trim() }
             .filter(String::isNotEmpty)
@@ -27,9 +28,12 @@ object EnhancementOverlayParser {
             .toList()
             .also {
                 require(it.isNotEmpty()) { "Runtime overlay is empty" }
+                require(it.size <= MAX_WORDS) { "Runtime overlay is too large" }
                 require(it.map(EnhancementOverlayWord::address).distinct().size == it.size) {
                     "Runtime overlay contains duplicate write addresses"
                 }
             }
     }
+
+    private const val MAX_WORDS = 4096
 }

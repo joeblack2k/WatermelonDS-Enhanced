@@ -10,7 +10,7 @@ repository or in a release.
 ThorDS provenance:
 
 - camera: EU revision-0 right-stick camera research and guarded source payload;
-- widescreen: EU revision-0 aspect-ratio research and the installable guarded
+- widescreen: EU revision-0 aspect-ratio research and the SOURCE_ONLY guarded
   payload;
 - 60fps: EU revision-0 timing research and source-only payload analysis.
 
