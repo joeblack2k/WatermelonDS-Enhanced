@@ -188,7 +188,7 @@ object MelonEmulator {
     private external fun onKeyRelease(key: Int)
 
     external fun setSlot2AnalogInput(x: Float, y: Float)
-    external fun setSlot2CameraState(
+    external fun setRuntimeTransientInputFrame(
         yawInputQ12: Short,
         pitchInputQ12: Short,
         yawUnitsPerTick: Short,

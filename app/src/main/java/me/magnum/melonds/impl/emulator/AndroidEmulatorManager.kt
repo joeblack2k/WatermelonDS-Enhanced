@@ -20,6 +20,7 @@ import me.magnum.enhancements.EnhancementRuntimeGuard
 import me.magnum.enhancements.EnhancementOverlayWord
 import me.magnum.enhancements.EnhancementActivationRequest
 import me.magnum.enhancements.EnhancementActivationResult
+import me.magnum.enhancements.RuntimeCapability
 import me.magnum.enhancements.activateEnhancements
 import me.magnum.melonds.common.PermissionHandler
 import me.magnum.melonds.common.romprocessors.RomFileProcessorFactory
@@ -391,6 +392,10 @@ class AndroidEmulatorManager(
         enhancedRuntimeGuards = requests.filter { it.addOnId in result.activeAddOnIds }.flatMap { it.guards }
         enhancedRuntimeOverlay = requests.filter { it.addOnId in result.activeAddOnIds }.flatMap { it.overlay }
         return result
+    }
+
+    override fun enhancedRuntimeCapabilities(): Set<RuntimeCapability> {
+        return setOf(RuntimeCapability("transient-input", 1))
     }
 
     private suspend fun loadInstalledDsiWareShortcut(rom: Rom, cheats: List<Cheat>): RomLaunchResult {

@@ -150,7 +150,7 @@ namespace MelonDSAndroid {
     extern void pressKey(u32 key);
     extern void releaseKey(u32 key);
     extern void setSlot2AnalogInput(float x, float y);
-    extern void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
+    extern void setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags);
     extern bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord);
     extern bool applyEnhancedRuntimeOverlay(

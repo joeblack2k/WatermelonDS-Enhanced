@@ -410,6 +410,8 @@ namespace MelonDSAndroid
     void ReplaceInstance(std::shared_ptr<MelonInstance> replacement)
     {
         std::lock_guard lock(instanceLifetimeMutex);
+        if (instance)
+            instance->clearTransientInputState();
         instance = std::move(replacement);
     }
 
@@ -725,11 +727,11 @@ namespace MelonDSAndroid
             instance->setSlot2AnalogInput(x, y);
     }
 
-    void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
+    void setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags)
     {
         if (instance)
-            instance->setSlot2CameraState(yawInputQ12, pitchInputQ12, yawUnitsPerTick, recenterSequence, flags);
+            instance->setRuntimeTransientInputFrame(yawInputQ12, pitchInputQ12, yawUnitsPerTick, recenterSequence, flags);
     }
 
     bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord)
@@ -1396,6 +1398,8 @@ namespace MelonDSAndroid
 
     void pause()
     {
+        if (instance)
+            instance->clearTransientInputState();
         pauseAudio();
     }
 

@@ -1,6 +1,6 @@
 package me.magnum.enhancements
 
-data class CameraInputState(
+data class RuntimeInputFrame(
     val yawQ12: Short,
     val pitchQ12: Short,
     val yawUnitsPerTick: Short,
@@ -8,14 +8,14 @@ data class CameraInputState(
     val flags: Short,
 )
 
-class CameraInputProtocol(
+class RuntimeInputProtocol(
     private val deadzone: Float = 0.12f,
     private val yawUnitsPerTick: Short = 850,
 ) {
     private var recenterSequence: Short = 0
 
-    fun update(rawX: Float, rawY: Float): CameraInputState {
-        return CameraInputState(
+    fun update(rawX: Float, rawY: Float): RuntimeInputFrame {
+        return RuntimeInputFrame(
             yawQ12 = q12(applyDeadzone(rawX)),
             pitchQ12 = q12(applyDeadzone(rawY)),
             yawUnitsPerTick = yawUnitsPerTick,
@@ -24,13 +24,13 @@ class CameraInputProtocol(
         )
     }
 
-    fun recenter(): CameraInputState {
+    fun recenter(): RuntimeInputFrame {
         recenterSequence = (recenterSequence + 1).toShort()
         return update(0f, 0f)
     }
 
-    fun neutral(): CameraInputState {
-        return CameraInputState(0, 0, 0, recenterSequence, 0)
+    fun neutral(): RuntimeInputFrame {
+        return update(0f, 0f).copy(yawUnitsPerTick = 0, flags = 0)
     }
 
     private fun applyDeadzone(value: Float): Float {

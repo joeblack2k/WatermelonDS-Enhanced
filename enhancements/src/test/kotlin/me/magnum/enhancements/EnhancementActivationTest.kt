@@ -5,7 +5,7 @@ import org.junit.Test
 
 class EnhancementActivationTest {
     @Test
-    fun goodAddonSurvivesFailingAddon() {
+    fun anyPreparationFailureFallsBackAllAddOns() {
         val requests = listOf(
             EnhancementActivationRequest("good", emptyList(), emptyList()),
             EnhancementActivationRequest(
@@ -21,7 +21,25 @@ class EnhancementActivationTest {
             applyOverlay = { true },
         )
 
-        assertEquals(setOf("good"), result.activeAddOnIds)
-        assertEquals(setOf("bad"), result.failedAddOnIds)
+        assertEquals(emptySet<String>(), result.activeAddOnIds)
+        assertEquals(setOf("good", "bad"), result.failedAddOnIds)
+    }
+
+    @Test
+    fun overlayIsComposedAndAppliedAsOneAtomicOperation() {
+        val applied = mutableListOf<List<EnhancementOverlayWord>>()
+        val requests = listOf(
+            EnhancementActivationRequest("one", emptyList(), listOf(EnhancementOverlayWord(1, 2, 3))),
+            EnhancementActivationRequest("two", emptyList(), listOf(EnhancementOverlayWord(4, 5, 6))),
+        )
+
+        val result = activateEnhancements(requests, { true }) {
+            applied += it
+            false
+        }
+
+        assertEquals(emptySet<String>(), result.activeAddOnIds)
+        assertEquals(setOf("one", "two"), result.failedAddOnIds)
+        assertEquals(listOf(requests.flatMap { it.overlay }), applied)
     }
 }

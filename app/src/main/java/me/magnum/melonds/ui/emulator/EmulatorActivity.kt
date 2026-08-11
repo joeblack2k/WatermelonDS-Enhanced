@@ -2209,6 +2209,9 @@ class EmulatorActivity : AppCompatActivity() {
     }
 
     private fun setupInputHandling(controllerConfiguration: ControllerConfiguration, runtimeInput: EnhancementRuntimeInput? = null) {
+        if (::nativeInputListener.isInitialized) {
+            nativeInputListener.neutralizeTransientInputs()
+        }
         nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler, runtimeInput)
     }
 

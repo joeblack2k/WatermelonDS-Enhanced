@@ -50,13 +50,14 @@ public:
     void reset();
     melonDS::u32 runFrame();
     void stop();
+    void clearTransientInputState();
 
     void touchScreen(u16 x, u16 y);
     void releaseScreen();
     void pressKey(u32 key);
     void releaseKey(u32 key);
     void setSlot2AnalogInput(float x, float y);
-    void setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
+    void setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
         u16 recenterSequence, u16 flags);
     bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const;
     bool applyEnhancedRuntimeOverlay(

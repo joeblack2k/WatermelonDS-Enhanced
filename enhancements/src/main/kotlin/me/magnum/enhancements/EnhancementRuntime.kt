@@ -9,14 +9,17 @@ data class EnhancementSession(
     private val runtimeAddOns = addOns.filter { it.status != EnhancementStatus.SOURCE_ONLY }
     val capabilities: Set<EnhancementCapability> = runtimeAddOns.flatMap { it.capabilities }.toSet()
     val hardcoreCompatible: Boolean = runtimeAddOns.all { it.hardcoreCompatible }
+    val declaredRuntimeCapability: RuntimeCapability? = runtimeAddOns
+        .mapNotNull { it.runtimeCapability ?: it.runtimeProtocol?.let { id -> RuntimeCapability(id, 1) } }
+        .singleOrNull()
     val runtimeInput: EnhancementRuntimeInput? = runtimeAddOns
         .mapNotNull { addOn ->
-            addOn.runtimeProtocol?.let { protocol ->
+            (addOn.runtimeCapability ?: addOn.runtimeProtocol?.let { RuntimeCapability(it, 1) })?.let { capability ->
                 require(EnhancementCapability.RUNTIME_INPUT_PROTOCOL in addOn.capabilities) {
                     "Runtime input protocol requires its capability"
                 }
                 EnhancementRuntimeInput(
-                    protocol = protocol,
+                    capability = capability,
                     axisXCode = requireNotNull(addOn.runtimeAxisXCode),
                     axisYCode = requireNotNull(addOn.runtimeAxisYCode),
                     invertX = addOn.runtimeInvertX,
@@ -76,6 +79,14 @@ data class EnhancementSession(
     fun close() = Unit
 }
 
+fun EnhancementSession.runtimeInputIfSupported(
+    available: Set<RuntimeCapability>,
+): EnhancementRuntimeInput? {
+    val declared = declaredRuntimeCapability ?: return null
+    if (declared !in available) return null
+    return runtimeInput
+}
+
 data class EnhancementActivationRequest(
     val addOnId: String,
     val guards: List<EnhancementRuntimeGuard>,
@@ -92,12 +103,16 @@ fun activateEnhancements(
     validateGuard: (EnhancementRuntimeGuard) -> Boolean,
     applyOverlay: (List<EnhancementOverlayWord>) -> Boolean,
 ): EnhancementActivationResult {
-    val prepared = requests.filter { request -> request.guards.all(validateGuard) }
-    val active = prepared.filter { request -> applyOverlay(request.overlay) }
-    val activeIds = active.mapTo(mutableSetOf()) { it.addOnId }
+    val requestedIds = requests.mapTo(mutableSetOf()) { it.addOnId }
+    val prepared = requests.all { request -> request.guards.all(validateGuard) }
+    val activeIds = if (prepared && applyOverlay(requests.flatMap { it.overlay })) {
+        requestedIds
+    } else {
+        emptySet()
+    }
     return EnhancementActivationResult(
         activeAddOnIds = activeIds,
-        failedAddOnIds = requests.mapTo(mutableSetOf()) { it.addOnId } - activeIds,
+        failedAddOnIds = requestedIds - activeIds,
     )
 }
 
@@ -137,7 +152,7 @@ fun EnhancementCatalog.createSession(
         "Enabled enhancements cannot declare more than one controller axis owner"
     }
     require(selected.none {
-        it.runtimeProtocol != null &&
+        (it.runtimeCapability != null || it.runtimeProtocol != null) &&
             EnhancementCapability.RUNTIME_INPUT_PROTOCOL !in it.capabilities
     }) {
         "Runtime input protocol requires its capability"
@@ -151,6 +166,19 @@ fun EnhancementCatalog.createSession(
         "Enabled enhancements cannot guard the same runtime address more than once"
     }
     return EnhancementSession(selected)
+}
+
+fun EnhancementCatalog.createSession(
+    identity: EnhancementRomIdentity,
+    enabledIds: Set<String>,
+    availableRuntimeCapabilities: Set<RuntimeCapability>,
+): EnhancementSession {
+    val session = createSession(identity, enabledIds)
+    val declared = session.declaredRuntimeCapability ?: return session
+    require(declared in availableRuntimeCapabilities) {
+        "Required runtime capability is missing or unsupported: ${declared.id}@${declared.majorVersion}"
+    }
+    return session
 }
 
 private fun parseRuntimeAddress(address: String): Long {

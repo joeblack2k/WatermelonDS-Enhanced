@@ -17,7 +17,10 @@
     "RUNTIME_CODE_PATCH",
     "SLOT2_ANALOG"
   ],
-  "runtimeProtocol": "sm64ds-camera-v1",
+  "runtimeCapability": {
+    "id": "transient-input",
+    "majorVersion": 1
+  },
   "runtimeAxisXCode": 12,
   "runtimeAxisYCode": 13,
   "runtimeDeadzone": 0.12,

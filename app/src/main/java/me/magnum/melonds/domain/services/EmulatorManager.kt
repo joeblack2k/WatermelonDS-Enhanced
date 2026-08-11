@@ -16,6 +16,7 @@ import me.magnum.enhancements.EnhancementRuntimeGuard
 import me.magnum.enhancements.EnhancementOverlayWord
 import me.magnum.enhancements.EnhancementActivationRequest
 import me.magnum.enhancements.EnhancementActivationResult
+import me.magnum.enhancements.RuntimeCapability
 import me.magnum.melonds.ui.emulator.rewind.model.RewindSaveState
 import me.magnum.melonds.ui.emulator.rewind.model.RewindWindow
 
@@ -27,6 +28,7 @@ interface EmulatorManager {
     fun setEnhancedRuntimeGuards(guards: List<EnhancementRuntimeGuard>)
     fun setEnhancedRuntimeOverlay(words: List<EnhancementOverlayWord>)
     fun activateEnhancedAddOns(requests: List<EnhancementActivationRequest>): EnhancementActivationResult
+    fun enhancedRuntimeCapabilities(): Set<RuntimeCapability>
 
     suspend fun loadFirmware(consoleType: ConsoleType): FirmwareLaunchResult
 

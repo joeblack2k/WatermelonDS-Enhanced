@@ -1917,7 +1917,7 @@ void MelonInstance::start()
 
 void MelonInstance::reset()
 {
-    setSlot2CameraState(0, 0, 0, 0, 0);
+    clearTransientInputState();
     nds->Reset();
     setBatteryLevels();
     setDateTime();
@@ -2751,7 +2751,7 @@ void MelonInstance::handleVulkanRuntimeFailure(const char* reason)
 
 void MelonInstance::stop()
 {
-    setSlot2CameraState(0, 0, 0, 0, 0);
+    clearTransientInputState();
     std::unique_ptr<RetroAchievements::RetroAchievementsManager> managerToDestroy;
     {
         std::lock_guard lock(retroAchievementsManagerLifetimeMutex);
@@ -2830,7 +2830,14 @@ void MelonInstance::setSlot2AnalogInput(float x, float y)
     slot2AnalogY.store(std::clamp(y, -1.0f, 1.0f), std::memory_order_relaxed);
 }
 
-void MelonInstance::setSlot2CameraState(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
+void MelonInstance::clearTransientInputState()
+{
+    setSlot2AnalogInput(0.0f, 0.0f);
+    setRuntimeTransientInputFrame(0, 0, 0,
+        slot2CameraRecenterSequence.load(std::memory_order_relaxed), 0);
+}
+
+void MelonInstance::setRuntimeTransientInputFrame(s16 yawInputQ12, s16 pitchInputQ12, u16 yawUnitsPerTick,
     u16 recenterSequence, u16 flags)
 {
     slot2CameraYawInputQ12.store(std::clamp<s16>(yawInputQ12, -4096, 4096), std::memory_order_relaxed);
@@ -5118,6 +5125,7 @@ bool MelonInstance::saveState(Savestate* state, bool refreshScreenshot)
 
 bool MelonInstance::loadState(Savestate* state)
 {
+    clearTransientInputState();
     joinPendingFrameTail();
     {
         std::lock_guard lock(retroAchievementsManagerLifetimeMutex);

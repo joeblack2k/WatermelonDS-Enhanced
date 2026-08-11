@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import java.io.File
 
 class EnhancementRuntimeTest {
     private val identity = EnhancementRomIdentity("ASMP", "12345678", "")
@@ -104,7 +105,7 @@ class EnhancementRuntimeTest {
 
         assertEquals(
             EnhancementRuntimeInput(
-                protocol = "camera-v1",
+                capability = RuntimeCapability("camera-v1", 1),
                 axisXCode = 17,
                 axisYCode = 19,
                 invertX = true,
@@ -115,6 +116,84 @@ class EnhancementRuntimeTest {
             session.runtimeInput,
         )
         assertFalse(session.runtimeInput == null)
+    }
+
+    @Test
+    fun runtimeCapabilityRequiresExactReportedMajorVersion() {
+        val owner = manifest("owner", protocol = null).copy(
+            runtimeCapability = RuntimeCapability("transient-input", 2),
+            capabilities = setOf(
+                EnhancementCapability.CONTROLLER_AXIS_OWNER,
+                EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
+            ),
+        )
+        val catalog = EnhancementCatalog(listOf(owner))
+        val identity = this.identity
+
+        assertRejects("missing or unsupported") {
+            catalog.createSession(
+                identity,
+                setOf(owner.id),
+                setOf(RuntimeCapability("transient-input", 1)),
+            )
+        }
+        assertEquals(
+            RuntimeCapability("transient-input", 2),
+            catalog.createSession(
+                identity,
+                setOf(owner.id),
+                setOf(RuntimeCapability("transient-input", 2)),
+            ).declaredRuntimeCapability,
+        )
+    }
+
+    @Test
+    fun runtimeInputIsUnavailableWhenReportedCapabilityDoesNotMatchDeclaration() {
+        val owner = manifest("owner", protocol = null).copy(
+            runtimeCapability = RuntimeCapability("transient-input", 2),
+            capabilities = setOf(
+                EnhancementCapability.CONTROLLER_AXIS_OWNER,
+                EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
+            ),
+        )
+        val session = EnhancementCatalog(listOf(owner)).createSession(identity, setOf(owner.id))
+
+        assertEquals(
+            null,
+            session.runtimeInputIfSupported(setOf(RuntimeCapability("transient-input", 1))),
+        )
+        assertEquals(
+            session.runtimeInput,
+            session.runtimeInputIfSupported(setOf(RuntimeCapability("transient-input", 2))),
+        )
+    }
+
+    @Test
+    fun genericRuntimeSourcesContainNoAddonSpecificAddressLiterals() {
+        val roots = listOf(
+            File("../app/src/main/java"),
+            File("../app/src/main/cpp"),
+            File("src/main/kotlin"),
+        )
+        val sources = roots
+            .flatMap { root -> root.walkTopDown().filter { it.isFile }.toList() }
+            .filter { it.extension in setOf("kt", "java", "cpp", "h", "cc", "cxx") }
+            .joinToString("\n", transform = File::readText)
+        val addOnIds = File(".").listFiles()
+            ?.filter { it.isDirectory && File(it, "manifest.json").isFile }
+            ?.map { it.name }
+            .orEmpty()
+        val manifests = addOnIds.mapNotNull { id ->
+            File("$id/manifest.json").takeIf(File::isFile)?.readText()
+        }.joinToString("\n")
+
+        assertFalse(addOnIds.any { id ->
+            Regex.escape(id).toRegex(RegexOption.IGNORE_CASE).containsMatchIn(sources)
+        })
+        val manifestLiterals = Regex("0x[0-9A-Fa-f]{8}").findAll(manifests).map { it.value }.toSet()
+        assertFalse(manifestLiterals.any { literal ->
+            Regex.escape(literal).toRegex().containsMatchIn(sources)
+        })
     }
 
     @Test

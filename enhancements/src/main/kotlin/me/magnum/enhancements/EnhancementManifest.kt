@@ -16,6 +16,8 @@ data class EnhancementManifest(
     val match: EnhancementMatch,
     val capabilities: Set<EnhancementCapability> = emptySet(),
     val patches: List<EnhancementPatch> = emptyList(),
+    val runtimeCapability: RuntimeCapability? = null,
+    @Deprecated("Use runtimeCapability")
     val runtimeProtocol: String? = null,
     val runtimeAxisXCode: Int? = null,
     val runtimeAxisYCode: Int? = null,
@@ -224,7 +226,9 @@ object EnhancementManifestParser {
             require(EnhancementCapability.CONTROLLER_AXIS_OWNER in manifest.capabilities) {
                 "Runtime input protocols must own their controller axes"
             }
-            require(manifest.runtimeProtocol != null) { "Runtime input capability needs a protocol" }
+            require(manifest.runtimeCapability != null || manifest.runtimeProtocol != null) {
+                "Runtime input capability needs a capability"
+            }
             require(manifest.runtimeAxisXCode != null && manifest.runtimeAxisYCode != null) {
                 "Runtime input protocols must declare both axis codes"
             }
@@ -240,8 +244,19 @@ object EnhancementManifestParser {
     private const val MAX_OVERLAY_WORDS = 4096
 }
 
-data class EnhancementRuntimeInput(
-    val protocol: String,
+@Serializable
+data class RuntimeCapability(
+    val id: String,
+    val majorVersion: Int,
+) {
+    init {
+        require(id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid runtime capability id" }
+        require(majorVersion > 0) { "Invalid runtime capability major version" }
+    }
+}
+
+data class RuntimeTransientInputFrame(
+    val capability: RuntimeCapability,
     val axisXCode: Int,
     val axisYCode: Int,
     val invertX: Boolean,
@@ -249,6 +264,8 @@ data class EnhancementRuntimeInput(
     val deadzone: Float,
     val sensitivity: Float,
 )
+
+typealias EnhancementRuntimeInput = RuntimeTransientInputFrame
 
 data class EnhancementRuntimeGuard(
     val addOnId: String,

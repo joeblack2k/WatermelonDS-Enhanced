@@ -9,7 +9,7 @@ import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.domain.model.ControllerConfiguration
 import me.magnum.melonds.domain.model.Input
 import me.magnum.melonds.domain.model.InputConfig
-import me.magnum.enhancements.CameraInputProtocol
+import me.magnum.enhancements.RuntimeInputProtocol
 import me.magnum.enhancements.EnhancementRuntimeInput
 import java.util.Locale
 import kotlin.math.absoluteValue
@@ -34,7 +34,7 @@ class InputProcessor(
     private var slot2DigitalUpPressed = false
     private var slot2DigitalDownPressed = false
     private val cameraProtocol = runtimeInput?.let {
-        CameraInputProtocol(
+        RuntimeInputProtocol(
             deadzone = it.deadzone,
             yawUnitsPerTick = (850f * it.sensitivity).toInt()
                 .coerceIn(1, Short.MAX_VALUE.toInt())
@@ -131,8 +131,8 @@ class InputProcessor(
         }
     }
 
-    private fun sendCameraState(state: me.magnum.enhancements.CameraInputState) {
-        MelonEmulator.setSlot2CameraState(
+    private fun sendCameraState(state: me.magnum.enhancements.RuntimeInputFrame) {
+        MelonEmulator.setRuntimeTransientInputFrame(
             state.yawQ12,
             state.pitchQ12,
             state.yawUnitsPerTick,

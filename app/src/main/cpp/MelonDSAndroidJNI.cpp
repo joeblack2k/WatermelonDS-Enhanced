@@ -2398,11 +2398,11 @@ Java_me_magnum_melonds_MelonEmulator_setSlot2AnalogInput(JNIEnv* env, jobject th
 }
 
 JNIEXPORT void JNICALL
-Java_me_magnum_melonds_MelonEmulator_setSlot2CameraState(
+Java_me_magnum_melonds_MelonEmulator_setRuntimeTransientInputFrame(
     JNIEnv* env, jobject thiz, jshort yawInputQ12, jshort pitchInputQ12, jshort yawUnitsPerTick,
     jshort recenterSequence, jshort flags)
 {
-    MelonDSAndroid::setSlot2CameraState(
+    MelonDSAndroid::setRuntimeTransientInputFrame(
         yawInputQ12, pitchInputQ12, static_cast<u16>(yawUnitsPerTick),
         static_cast<u16>(recenterSequence), static_cast<u16>(flags));
 }
