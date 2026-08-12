@@ -8,6 +8,7 @@ import me.magnum.enhancements.EnhancementManifest
 import me.magnum.enhancements.EnhancementManifestParser
 import me.magnum.enhancements.EnhancementPackageInstaller
 import java.io.File
+import java.security.MessageDigest
 import javax.inject.Inject
 
 class EnhancementCatalogLoader @Inject constructor(
@@ -34,7 +35,7 @@ class EnhancementCatalogLoader @Inject constructor(
             File(context.filesDir, "Enhancements"),
             context.getExternalFilesDir(null)?.let { File(it, "Enhancements") },
         )
-        val installed = EnhancementCatalog.loadFromRoots(roots)
+        val installed = loadInstalled(roots)
         val bundled = context.assets.list("enhancements").orEmpty().mapNotNull { id ->
             context.assets.open("enhancements/$id/manifest.json").use {
                 EnhancementManifestParser.parse(it.bufferedReader().readText())
@@ -43,14 +44,60 @@ class EnhancementCatalogLoader @Inject constructor(
         return installed.mergeBundled(EnhancementCatalog(bundled))
     }
 
+    internal companion object {
+        fun loadInstalled(roots: List<File>): EnhancementCatalog {
+            return EnhancementCatalog(
+                roots.asSequence()
+                    .filter(File::isDirectory)
+                    .flatMap { root ->
+                        root.listFiles().orEmpty().asSequence()
+                            .filter { it.isDirectory && !it.name.startsWith(".") }
+                    }
+                    .mapNotNull { packageRoot ->
+                        runCatching {
+                            val manifestFile = File(packageRoot, "manifest.json")
+                            require(manifestFile.isFile)
+                            val manifest = EnhancementManifestParser.parse(manifestFile.readText())
+                            require(packageRoot.name == manifest.id) {
+                                "Enhancement directory does not match manifest id: ${packageRoot.name}"
+                            }
+                            manifest.patches.forEach { patch ->
+                                patch.sha256?.let { expected ->
+                                    val file = File(packageRoot, patch.file)
+                                    require(file.isFile) {
+                                        "Missing enhancement patch file: ${patch.file}"
+                                    }
+                                    val actual = MessageDigest.getInstance("SHA-256")
+                                        .digest(file.readBytes())
+                                        .joinToString("") { "%02x".format(it) }
+                                    require(actual.equals(expected, ignoreCase = true)) {
+                                        "Patch SHA-256 mismatch: ${patch.file}"
+                                    }
+                                }
+                            }
+                            manifest
+                        }.getOrNull()
+                    }
+                    .toList(),
+            )
+        }
+
+        fun acceptedPackageRoot(
+            roots: List<File>,
+            manifest: EnhancementManifest,
+        ): File? {
+            return roots.asSequence()
+                .map { File(it, manifest.id) }
+                .firstOrNull { it.isAcceptedPackage(manifest) }
+        }
+    }
+
     fun readFiles(manifest: me.magnum.enhancements.EnhancementManifest, paths: Set<String>): Map<String, ByteArray> {
         val roots = listOfNotNull(
             File(context.filesDir, "Enhancements"),
             context.getExternalFilesDir(null)?.let { File(it, "Enhancements") },
         )
-        val packageRoot = roots.asSequence()
-            .map { File(it, manifest.id) }
-            .firstOrNull { it.isDirectory }
+        val packageRoot = acceptedPackageRoot(roots, manifest)
             ?: error("Installed enhancement package not found: ${manifest.id}")
         return paths.associateWith { relativePath ->
             require(!relativePath.startsWith("/") && ".." !in relativePath.split('/')) {
@@ -64,4 +111,23 @@ class EnhancementCatalogLoader @Inject constructor(
             file.readBytes()
         }
     }
+
+}
+
+private fun File.isAcceptedPackage(manifest: EnhancementManifest): Boolean {
+    if (!isDirectory || name != manifest.id) return false
+    return runCatching {
+        val loaded = EnhancementManifestParser.parse(File(this, "manifest.json").readText())
+        require(loaded.id == manifest.id)
+        manifest.patches.forEach { patch ->
+            patch.sha256?.let { expected ->
+                val file = File(this, patch.file)
+                require(file.isFile)
+                val actual = MessageDigest.getInstance("SHA-256")
+                    .digest(file.readBytes())
+                    .joinToString("") { "%02x".format(it) }
+                require(actual.equals(expected, ignoreCase = true))
+            }
+        }
+    }.isSuccess
 }
