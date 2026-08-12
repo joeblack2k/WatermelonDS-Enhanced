@@ -68,6 +68,32 @@ jobs:
           MELONDS_ACCEPTANCE_BUILD: true
         run: ./gradlew :app:assembleGitHubProdDebug --no-daemon
 
+      - name: Verify bundled enhancement assets in APK
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          apks = list(pathlib.Path("app/build/outputs/apk").rglob("app-gitHubProd-debug.apk"))
+          assert len(apks) == 1, f"expected one debug APK, found {len(apks)}"
+          expected = {
+              "assets/enhancements/sm64ds.eu.60fps/manifest.json",
+              "assets/enhancements/sm64ds.eu.right-stick-camera/manifest.json",
+              "assets/enhancements/sm64ds.eu.widescreen/manifest.json",
+          }
+          with zipfile.ZipFile(apks[0]) as apk:
+              entries = set(apk.namelist())
+          enhancement_entries = {
+              entry for entry in entries if entry.startswith("assets/enhancements/")
+          }
+          assert enhancement_entries == expected, (
+              f"unexpected enhancement APK entries: "
+              f"{sorted(enhancement_entries ^ expected)}"
+          )
+          print(f"verified {apks[0]}: {sorted(enhancement_entries)}")
+          PY
+
       - name: Verify APK provenance
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

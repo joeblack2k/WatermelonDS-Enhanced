@@ -9,6 +9,17 @@ import java.security.MessageDigest
 
 class EnhancementCatalogTest {
     @Test
+    fun installedManifestOverridesBundledManifestById() {
+        val bundled = EnhancementManifestParser.parse(manifest("same.addon")).copy(version = "bundled")
+        val installed = bundled.copy(version = "installed")
+
+        val merged = EnhancementCatalog(listOf(installed))
+            .mergeBundled(EnhancementCatalog(listOf(bundled)))
+
+        assertEquals("installed", merged.find("same.addon")?.version)
+    }
+
+    @Test
     fun installableMatchesExcludeSourceOnlyManifests() {
         val sourceOnly = EnhancementManifestParser.parse(manifest("source.only"))
             .copy(schemaVersion = 3, distributionStatus = EnhancementDistributionStatus.SOURCE_ONLY)

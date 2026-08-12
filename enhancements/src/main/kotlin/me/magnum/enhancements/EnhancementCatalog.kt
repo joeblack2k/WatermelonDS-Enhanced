@@ -32,6 +32,11 @@ class EnhancementCatalog(manifests: List<EnhancementManifest>) {
 
     fun find(id: String): EnhancementManifest? = manifests.firstOrNull { it.id == id }
 
+    fun mergeBundled(bundled: EnhancementCatalog): EnhancementCatalog {
+        val installedIds = manifests.map { it.id }.toSet()
+        return EnhancementCatalog(manifests + bundled.manifests.filterNot { it.id in installedIds })
+    }
+
     companion object {
         fun loadFromRoots(roots: Iterable<File>): EnhancementCatalog {
             val manifests = roots.asSequence()

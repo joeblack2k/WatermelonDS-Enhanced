@@ -5,6 +5,7 @@ import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import me.magnum.enhancements.EnhancementCatalog
 import me.magnum.enhancements.EnhancementManifest
+import me.magnum.enhancements.EnhancementManifestParser
 import me.magnum.enhancements.EnhancementPackageInstaller
 import java.io.File
 import javax.inject.Inject
@@ -33,7 +34,13 @@ class EnhancementCatalogLoader @Inject constructor(
             File(context.filesDir, "Enhancements"),
             context.getExternalFilesDir(null)?.let { File(it, "Enhancements") },
         )
-        return EnhancementCatalog.loadFromRoots(roots)
+        val installed = EnhancementCatalog.loadFromRoots(roots)
+        val bundled = context.assets.list("enhancements").orEmpty().mapNotNull { id ->
+            context.assets.open("enhancements/$id/manifest.json").use {
+                EnhancementManifestParser.parse(it.bufferedReader().readText())
+            }
+        }
+        return installed.mergeBundled(EnhancementCatalog(bundled))
     }
 
     fun readFiles(manifest: me.magnum.enhancements.EnhancementManifest, paths: Set<String>): Map<String, ByteArray> {

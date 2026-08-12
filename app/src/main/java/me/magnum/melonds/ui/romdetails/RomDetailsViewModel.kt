@@ -115,12 +115,12 @@ class RomDetailsViewModel @Inject constructor(
                     globalRetroArchShaderParameters = shaderConfig.second,
                     hasValidRetroArchShaderRoot = shaderConfig.third,
                     globalRetroAchievementsEnabled = globalRetroAchievementsEnabled,
-                    availableEnhancementIds = withContext(Dispatchers.IO) {
+                    availableEnhancements = withContext(Dispatchers.IO) {
                         romFileProcessorFactory.getFileRomProcessorForDocument(_rom.value.uri)
                             .let { processor ->
                                 val catalog = enhancementCatalogLoader.load()
                                 enhancementRomIdentityResolver.resolve(_rom.value, catalog)
-                                    ?.let { catalog.installableMatching(it).map { manifest -> manifest.id } }
+                                    ?.let { catalog.matching(it) }
                             }
                             .orEmpty()
                     },

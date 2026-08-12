@@ -155,6 +155,20 @@ android {
     }
 }
 
+val bundledEnhancementAssets = layout.buildDirectory.dir("generated/bundledEnhancements").get().asFile
+tasks.register<Sync>("prepareBundledEnhancementAssets") {
+    from(rootProject.file("enhancements")) {
+        include("*/manifest.json")
+        eachFile { path = "enhancements/$path" }
+        includeEmptyDirs = false
+    }
+    into(bundledEnhancementAssets)
+}
+android.sourceSets["main"].assets.srcDir(bundledEnhancementAssets)
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn("prepareBundledEnhancementAssets")
+}
+
 androidComponents {
     onVariants(selector().withName("gitHubProdDebug")) { variant ->
         // Keep prod-debug distinct from other debug/release variants.
