@@ -52,8 +52,9 @@ The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
 upstream is `SapphireRhodonite/melonDS-android`; the fork's base is commit
 `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) and the
 current candidate tree is
-`34ea454454bcf62c31f83b451078791153cec646`, with `origin`/PR head at
-the same commit. The `melonDS-android-lib`
+`fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`, with `origin`/PR head at
+the same commit. The code-bearing parent is historical commit
+`34ea454454bcf62c31f83b451078791153cec646`. The `melonDS-android-lib`
 submodule is sourced from
 `joeblack2k/melonDS-android-lib` on the public branch
 `codex/slot2-camera-contract`, which exposes the baseline gitlink
@@ -62,7 +63,7 @@ name is stale and is not used.
 
 The current PR is PR #1, open and draft, with base
 `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9` and head
-`codex/watermelon-enhanced-pr@34ea454454bcf62c31f83b451078791153cec646`.
+`codex/watermelon-enhanced-pr@fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`.
 
 M3 evidence is recorded in [`docs/ENHANCED_ACCEPTANCE.md`](docs/ENHANCED_ACCEPTANCE.md).
 The repository build and baseline debug launch are evidenced, but distribution
