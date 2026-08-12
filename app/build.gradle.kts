@@ -1,6 +1,5 @@
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -9,6 +8,30 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+fun gitOutput(vararg arguments: String): String {
+    val process = ProcessBuilder(listOf("git") + arguments)
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+    check(process.waitFor() == 0) {
+        "Unable to determine source revision: git ${arguments.joinToString(" ")}"
+    }
+    return output
+}
+
+val acceptanceBuild = System.getenv("MELONDS_ACCEPTANCE_BUILD") == "true"
+val sourceRevision = runCatching { gitOutput("rev-parse", "--verify", "HEAD") }.getOrNull()
+if (acceptanceBuild) {
+    check(sourceRevision?.matches(Regex("[0-9a-f]{40}")) == true) {
+        "Acceptance build requires an exact 40-character superproject HEAD"
+    }
+    check(gitOutput("status", "--porcelain", "--untracked-files=all").isEmpty()) {
+        "Acceptance build requires a clean superproject worktree"
+    }
+}
+val embeddedSourceRevision = sourceRevision ?: "UNAVAILABLE"
 
 data class LibrashaderAbiTarget(
     val abi: String,
@@ -40,6 +63,7 @@ android {
         versionCode = AppConfig.versionCode
         versionName = AppConfig.versionName
         manifestPlaceholders["appName"] = "@string/app_name"
+        manifestPlaceholders["sourceRevision"] = embeddedSourceRevision
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86_64"))
