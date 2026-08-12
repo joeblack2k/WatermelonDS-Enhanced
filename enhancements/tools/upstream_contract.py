@@ -30,6 +30,24 @@ def _git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def _package_addresses(root: Path, package_id: str, manifest: dict) -> set[str]:
+    addresses = {
+        address.lower()
+        for patch in manifest.get("patches", [])
+        for address in patch.get("expectedOriginalWords", {})
+        if isinstance(address, str)
+    }
+    package_root = root / "enhancements" / package_id
+    for source_root in (package_root / "tools", package_root / "runtime"):
+        if not source_root.is_dir():
+            continue
+        for path in source_root.rglob("*"):
+            if path.is_file():
+                text = path.read_text(encoding="utf-8", errors="ignore")
+                addresses.update(match.lower() for match in SM64DS_ADDRESS.findall(text))
+    return addresses
+
+
 def check(root: Path, upstream_ref: str = UPSTREAM_REF) -> list[str]:
     root = root.resolve()
     try:
@@ -41,11 +59,13 @@ def check(root: Path, upstream_ref: str = UPSTREAM_REF) -> list[str]:
     if not (root / "enhancements" / "build.gradle.kts").is_file():
         raise AssertionError("enhancements module is missing")
 
+    package_addresses = set()
     for package_id in PACKAGE_IDS:
         manifest_path = root / "enhancements" / package_id / "manifest.json"
         if not manifest_path.is_file():
             raise AssertionError(f"manifest is missing: {package_id}")
         manifest = json.loads(manifest_path.read_text(encoding="ascii"))
+        package_addresses.update(_package_addresses(root, package_id, manifest))
         if manifest.get("status") != "SOURCE_ONLY":
             raise AssertionError(f"{package_id}: status is not SOURCE_ONLY")
         if manifest.get("distributionStatus") != "SOURCE_ONLY":
@@ -62,7 +82,7 @@ def check(root: Path, upstream_ref: str = UPSTREAM_REF) -> list[str]:
         path = root / name
         if path.is_file():
             text = path.read_text(encoding="utf-8", errors="ignore")
-            if SM64DS_ADDRESS.search(text):
+            if any(address.lower() in package_addresses for address in SM64DS_ADDRESS.findall(text)):
                 offenders.append(name)
     if offenders:
         raise AssertionError("SM64DS package address literal outside enhancements/: " + ", ".join(offenders))

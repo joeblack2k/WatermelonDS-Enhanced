@@ -28,6 +28,11 @@ class UpstreamContractTest(unittest.TestCase):
                 "status": "SOURCE_ONLY",
                 "distributionStatus": "SOURCE_ONLY",
                 "verification": {"payloadInput": "MISSING"},
+                "patches": [{
+                    "expectedOriginalWords": {
+                        "0x02009E70": "0xE92D4FF0",
+                    },
+                }],
             }))
         subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
         subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.com"], check=True)
@@ -46,7 +51,14 @@ class UpstreamContractTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "clean"):
             check(root)
 
-    def test_rejects_address_outside_enhancements(self) -> None:
+    def test_ignores_unrelated_address_outside_enhancements(self) -> None:
+        root = self.fixture()
+        (root / "note.txt").write_text("0x02012345")
+        subprocess.run(["git", "-C", str(root), "add", "note.txt"], check=True)
+        subprocess.run(["git", "-C", str(root), "commit", "-qm", "address"], check=True)
+        self.assertEqual(len(check(root)), 4)
+
+    def test_rejects_declared_package_address_outside_enhancements(self) -> None:
         root = self.fixture()
         (root / "note.txt").write_text("0x02009E70")
         subprocess.run(["git", "-C", str(root), "add", "note.txt"], check=True)
