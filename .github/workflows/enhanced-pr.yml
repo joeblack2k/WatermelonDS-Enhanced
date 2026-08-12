@@ -41,8 +41,49 @@ jobs:
       - name: Test widescreen manifest and payload
         run: python3 -B enhancements/sm64ds.eu.widescreen/tools/test_manifest.py
 
+      - name: Test camera patch tools
+        run: python3 -B enhancements/sm64ds.eu.right-stick-camera/tools/test_patch_tools.py
+
+      - name: Test 60fps patch tools
+        run: python3 -B enhancements/sm64ds.eu.60fps/tools/test_patch_tools.py
+
+      - name: Test widescreen tools
+        run: python3 -B enhancements/sm64ds.eu.widescreen/tools/test_widescreen_tools.py
+
       - name: Run tests
         run: ./gradlew :enhancements:test :app:testGitHubProdReleaseUnitTest --no-daemon
 
+      - name: Build production debug native code
+        run: ./gradlew :app:externalNativeBuildGitHubProdDebug --no-daemon
+
       - name: Assemble debug APK
         run: ./gradlew :app:assembleGitHubProdDebug --no-daemon
+
+      - name: Record production debug lint evidence
+        id: lint
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          ./gradlew lintGitHubProdDebug --no-daemon
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "### Lint evidence" >> "$GITHUB_STEP_SUMMARY"
+            echo "lintGitHubProdDebug succeeded." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Lint evidence" >> "$GITHUB_STEP_SUMMARY"
+            echo "lintGitHubProdDebug failed (exit $status); reports will be uploaded if generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
+
+      - name: Upload production debug lint reports
+        if: steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-prod-debug-lint-reports
+          path: |
+            app/build/reports/lint-results/
+            app/build/reports/lint-results-*.xml
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.txt
+          if-no-files-found: warn
