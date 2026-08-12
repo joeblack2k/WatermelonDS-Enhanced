@@ -5,6 +5,24 @@ import org.junit.Test
 import java.io.File
 
 class TransientInputLifecycleContractTest {
+    private fun body(source: String, signature: String): String {
+        val start = source.indexOf(signature)
+        assertTrue("Missing function: $signature", start >= 0)
+        val opening = source.indexOf('{', start)
+        assertTrue("Missing body: $signature", opening >= 0)
+        var depth = 0
+        for (index in opening until source.length) {
+            when (source[index]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return source.substring(opening, index + 1)
+                }
+            }
+        }
+        throw AssertionError("Unclosed body: $signature")
+    }
+
     @Test
     fun everyTransientInputLifecycleBoundaryReachesGenericNeutralizer() {
         val root = File("src/main")
@@ -15,24 +33,6 @@ class TransientInputLifecycleContractTest {
         val native = File(root, "cpp/MelonDS.cpp").readText()
         val instance = File(root, "cpp/MelonInstance.cpp").readText()
         val activity = File(root, "java/me/magnum/melonds/ui/emulator/EmulatorActivity.kt").readText()
-
-        fun body(source: String, signature: String): String {
-            val start = source.indexOf(signature)
-            assertTrue("Missing function: $signature", start >= 0)
-            val opening = source.indexOf('{', start)
-            assertTrue("Missing body: $signature", opening >= 0)
-            var depth = 0
-            for (index in opening until source.length) {
-                when (source[index]) {
-                    '{' -> depth++
-                    '}' -> {
-                        depth--
-                        if (depth == 0) return source.substring(opening, index + 1)
-                    }
-                }
-            }
-            throw AssertionError("Unclosed body: $signature")
-        }
 
         assertTrue(viewModel.substringAfter("private fun resetEmulatorState")
             .substringBefore("private fun currentSessionIsActive")
@@ -65,5 +65,54 @@ class TransientInputLifecycleContractTest {
         val replacementIndex = inputSetupBody.indexOf("nativeInputListener = InputProcessor(")
         assertTrue(neutralizeIndex >= 0)
         assertTrue(replacementIndex > neutralizeIndex)
+    }
+
+    @Test
+    fun slot2MotionContractKeepsMappingOwnershipAndLifecycleGuards() {
+        val processor = File(
+            "src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt",
+        ).readText()
+        val activity = File(
+            "src/main/java/me/magnum/melonds/ui/emulator/EmulatorActivity.kt",
+        ).readText()
+        val mapping = File(
+            "src/main/java/me/magnum/melonds/domain/model/Slot2AnalogMapping.kt",
+        ).readText()
+
+        val slot2Body = body(processor, "private fun processSlot2AnalogFromMotionEvent")
+        val motionBody = body(processor, "override fun onMotionEvent")
+        val neutralizeBody = body(processor, "override fun neutralizeTransientInputs")
+        val dispatchBody = body(activity, "override fun dispatchGenericMotionEvent")
+        val sourceGuard = body(processor, "private fun isControllerMotionEvent")
+
+        assertTrue(sourceGuard.contains("SOURCE_CLASS_JOYSTICK"))
+        assertTrue(sourceGuard.contains("SOURCE_JOYSTICK"))
+        assertTrue(sourceGuard.contains("SOURCE_GAMEPAD"))
+        assertTrue(slot2Body.contains("slot2Mapping.axisXCode"))
+        assertTrue(slot2Body.contains("slot2Mapping.axisYCode"))
+        assertTrue(slot2Body.contains("slot2Mapping.effectiveDeviceId()"))
+        assertTrue(slot2Body.contains("mappedDeviceId != motionEvent.deviceId && mappedDeviceConnected"))
+        assertTrue(slot2Body.contains("mappedDeviceId == null || InputDevice.getDevice(mappedDeviceId) != null"))
+        assertTrue(slot2Body.contains("slot2Mapping.invertX"))
+        assertTrue(slot2Body.contains("slot2Mapping.invertY"))
+        assertTrue(slot2Body.contains("slot2Mapping.normalizedDeadzone()"))
+        assertTrue(slot2Body.contains("setSlot2AnalogInput(analogX, analogY)"))
+
+        assertTrue(motionBody.contains("processSlot2AnalogFromMotionEvent(motionEvent)"))
+        assertTrue(motionBody.contains("if (transientHandled &&"))
+        assertTrue(motionBody.contains("axis.axisCode == runtimeInput?.axisXCode"))
+        assertTrue(motionBody.contains("axis.axisCode == runtimeInput?.axisYCode"))
+        assertTrue(motionBody.contains("axisState.value = 0f"))
+        assertTrue(motionBody.contains("axisState.active = false"))
+
+        assertTrue(dispatchBody.contains("nativeInputListener.onMotionEventSlot2(event)"))
+        assertTrue(dispatchBody.contains("nativeInputListener.onMotionEvent(event)"))
+        assertTrue(neutralizeBody.contains("setSlot2AnalogInput(0f, 0f)"))
+        assertTrue(neutralizeBody.contains("sendTransientInput(requireNotNull(transientInputAdapter).neutral())"))
+
+        assertTrue(mapping.contains("val axisXCode: Int"))
+        assertTrue(mapping.contains("val axisYCode: Int"))
+        assertTrue(mapping.contains("fun effectiveDeviceId(): Int?"))
+        assertTrue(mapping.contains("return if (useDeviceFilter) deviceId else null"))
     }
 }
