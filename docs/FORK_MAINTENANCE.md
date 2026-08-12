@@ -7,7 +7,7 @@ payloads.
 ## Reference model
 
 - `origin`: `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`
-- `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
+- `upstream`: `https://github.com/SapphireRhodonite/WatermelonDS.git`
 - `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
 - `published branch`: `codex/watermelon-enhanced-pr`
 - `PR head`: live GitHub state is authoritative

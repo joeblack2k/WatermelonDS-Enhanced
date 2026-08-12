@@ -33,7 +33,7 @@ acceptance.
 | Item | Evidence |
 | --- | --- |
 | origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; live PR head for `codex/watermelon-enhanced-pr` is authoritative via GitHub |
-| upstream | `https://github.com/SapphireRhodonite/melonDS-android.git`; the maintained base branch is `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9` |
+| upstream | `https://github.com/SapphireRhodonite/WatermelonDS.git`; the maintained base branch is `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9` |
 | audit base | `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) |
 | published branch | `codex/watermelon-enhanced-pr`; live PR head is authoritative via GitHub |
 | merge-base with upstream/master | `7e31d08a3e0e3801c0aca393832238395ac63983` |

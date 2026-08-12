@@ -7,7 +7,7 @@ renderer, RetroArch shader presets and full external display support, wrapped in
 
 
 
-[<img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80">](https://github.com/SapphireRhodonite/melonDS-android/releases/latest)
+[<img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80">](https://github.com/SapphireRhodonite/WatermelonDS/releases/latest)
 
 <p align="center">
    <img width="450" height="400" alt="WaterMelon1" src="https://github.com/user-attachments/assets/187ea254-877e-4efd-a8dd-93a6023684ad" />
@@ -49,7 +49,7 @@ The core is kept in sync with melonDS 1.0 and later upstream changes.
 # Fork maintenance
 
 The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
-upstream is `SapphireRhodonite/melonDS-android`; the fork's base is commit
+upstream is `SapphireRhodonite/WatermelonDS`; the fork's base is commit
 `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) and the
 the published branch `codex/watermelon-enhanced-pr`; the live PR head is
 authoritative via GitHub. The code-bearing parent is historical commit
@@ -115,7 +115,7 @@ the save file directory is not set. Instead, WatermelonDS will create a save fil
 
 # Releases
 
-Builds are published [here](https://github.com/SapphireRhodonite/melonDS-android/releases). Release candidates are
+Builds are published [here](https://github.com/SapphireRhodonite/WatermelonDS/releases). Release candidates are
 marked as pre-releases; they can contain more bugs than usual and you may need to clear your app data to get them to
 work properly after an update.
 
@@ -126,7 +126,7 @@ To build the project you will need the Android SDK, NDK, CMake, a JDK 21 toolcha
 ## Build steps:
 1.  Clone the project, including submodules with:
     
-    `git clone --recurse-submodules https://github.com/SapphireRhodonite/melonDS-android.git`
+    `git clone --recurse-submodules https://github.com/SapphireRhodonite/WatermelonDS.git`
 2.  Install the Android SDK, NDK (`28.0.13004108`) and CMake
 3.  Install Rust with [rustup](https://rustup.rs/). If Android Studio does not inherit your shell `PATH`, set the
     `CARGO` and `RUSTUP` environment variables to the executable paths
