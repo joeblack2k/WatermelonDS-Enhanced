@@ -79,7 +79,10 @@ class EnhancementManifestInstallabilityTest {
         val widescreen = requireNotNull(manifests["sm64ds.eu.widescreen"])
         val sixty = requireNotNull(manifests["sm64ds.eu.60fps"])
         assertTrue(widescreen.requiresCapabilities.isEmpty())
-        assertEquals(setOf(EnhancementCapability.RUNTIME_CODE_PATCH), sixty.capabilities)
+        assertEquals(
+            setOf(EnhancementCapability.RUNTIME_CODE_PATCH, EnhancementCapability.GAME_TIMING_PATCH),
+            sixty.capabilities,
+        )
         assertEquals(setOf("sm64ds.eu.60fps"), widescreen.conflictsWith)
         assertEquals(setOf("sm64ds.eu.widescreen"), sixty.conflictsWith)
         assertEquals(EnhancementClaim.UNVERIFIED, sixty.verification.cadence)

@@ -63,6 +63,10 @@
     }
   ],
   "verification": {
+    "inputTransport": "UNVERIFIED",
+    "gameplayBehavior": "UNVERIFIED",
+    "lifecycle": "UNVERIFIED",
+    "recenter": "UNVERIFIED",
     "guardedPayload": "UNVERIFIED",
     "payloadInput": "MISSING"
   },

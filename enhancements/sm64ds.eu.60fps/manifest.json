@@ -13,7 +13,7 @@
       "ba3c4052e00c5cc31df5d5534c39de1b"
     ]
   },
-  "capabilities": ["RUNTIME_CODE_PATCH"],
+  "capabilities": ["RUNTIME_CODE_PATCH", "GAME_TIMING_PATCH"],
   "patches": [
     {
       "type": "ACTION_REPLAY",
@@ -36,6 +36,7 @@
   "conflictsWith": ["sm64ds.eu.widescreen"],
   "hardcoreCompatible": false,
   "verification": {
+    "gameplayBehavior": "UNVERIFIED",
     "cadence": "UNVERIFIED",
     "gameplayPhysics": "UNVERIFIED",
     "timers": "UNVERIFIED",

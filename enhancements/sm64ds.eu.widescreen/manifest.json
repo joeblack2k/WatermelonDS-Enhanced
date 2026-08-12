@@ -30,6 +30,8 @@
   "conflictsWith": ["sm64ds.eu.60fps"],
   "hardcoreCompatible": false,
   "verification": {
+    "gameplayBehavior": "UNVERIFIED",
+    "presentation": "UNVERIFIED",
     "guardedPayload": "UNVERIFIED",
     "payloadInput": "MISSING"
   }

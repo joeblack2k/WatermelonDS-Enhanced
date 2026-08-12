@@ -67,6 +67,11 @@ enum class EnhancementPayloadInput {
 
 @Serializable
 data class EnhancementVerification(
+    val inputTransport: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val gameplayBehavior: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val lifecycle: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val recenter: EnhancementClaim = EnhancementClaim.UNVERIFIED,
+    val presentation: EnhancementClaim = EnhancementClaim.UNVERIFIED,
     val cadence: EnhancementClaim = EnhancementClaim.UNVERIFIED,
     val gameplayPhysics: EnhancementClaim = EnhancementClaim.UNVERIFIED,
     val timers: EnhancementClaim = EnhancementClaim.UNVERIFIED,
@@ -99,6 +104,7 @@ enum class EnhancementCapability {
     NATIVE_EMULATOR_CAPABILITY,
     SLOT2_ANALOG,
     LAYER_AWARE_PRESENTATION,
+    GAME_TIMING_PATCH,
 }
 
 @Serializable
@@ -169,7 +175,7 @@ object EnhancementManifestParser {
         }
         require(manifest.id.matches(Regex("[a-z0-9][a-z0-9._-]*"))) { "Invalid enhancement id" }
         require(manifest.name.isNotBlank() && manifest.version.isNotBlank()) { "Missing enhancement metadata" }
-        if (manifest.status == EnhancementStatus.VERIFIED) {
+        if (manifest.schemaVersion < 3 && manifest.status == EnhancementStatus.VERIFIED) {
             require(manifest.verification.payloadInput == EnhancementPayloadInput.VERIFIED) {
                 "Verified enhancements need revision-specific payload input"
             }
@@ -187,6 +193,46 @@ object EnhancementManifestParser {
                     manifest.verification.saveState,
                 ).all { it == EnhancementClaim.VERIFIED },
             ) { "Verified enhancements need every timing contract claim" }
+        } else if (manifest.schemaVersion >= 3 && manifest.status == EnhancementStatus.VERIFIED) {
+            val verification = manifest.verification
+            val declaresRuntimePatch = EnhancementCapability.RUNTIME_CODE_PATCH in manifest.capabilities &&
+                manifest.patches.any {
+                    it.type == EnhancementPatchType.ACTION_REPLAY ||
+                        it.type == EnhancementPatchType.RUNTIME_OVERLAY
+                }
+            if (declaresRuntimePatch) {
+                require(verification.payloadInput == EnhancementPayloadInput.VERIFIED) {
+                    "Verified enhancements need revision-specific payload input"
+                }
+                require(verification.guardedPayload == EnhancementClaim.VERIFIED) {
+                    "Verified enhancements need guarded payload evidence"
+                }
+            }
+            val requiredClaims = buildList {
+                if (EnhancementCapability.RUNTIME_INPUT_PROTOCOL in manifest.capabilities) {
+                    add("inputTransport" to verification.inputTransport)
+                    add("lifecycle" to verification.lifecycle)
+                    if (manifest.recenter != null) add("recenter" to verification.recenter)
+                }
+                if (EnhancementCapability.RUNTIME_CODE_PATCH in manifest.capabilities) {
+                    add("gameplayBehavior" to verification.gameplayBehavior)
+                }
+                if (EnhancementCapability.LAYER_AWARE_PRESENTATION in manifest.capabilities) {
+                    add("presentation" to verification.presentation)
+                }
+                if (EnhancementCapability.GAME_TIMING_PATCH in manifest.capabilities) {
+                    add("cadence" to verification.cadence)
+                    add("gameplayPhysics" to verification.gameplayPhysics)
+                    add("timers" to verification.timers)
+                    add("animation" to verification.animation)
+                    add("particles" to verification.particles)
+                    add("audio" to verification.audio)
+                    add("saveState" to verification.saveState)
+                }
+            }
+            require(requiredClaims.all { it.second == EnhancementClaim.VERIFIED }) {
+                "Verified enhancements need every applicable capability claim"
+            }
         }
         require(manifest.match.gameCode.matches(Regex("[A-Z0-9]{4}"))) {
             "Game code must contain four uppercase ASCII letters or digits"

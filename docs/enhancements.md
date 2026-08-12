@@ -67,6 +67,14 @@ state on reset, pause, save-state load, controller disconnect, and teardown.
 - Surface active add-ons and their capabilities in the launch/session state.
 - Block incompatible RetroAchievements Hardcore sessions before emulation starts.
 
+Schema v3 verification is capability-scoped. Runtime input protocols require
+input transport and lifecycle evidence (plus recenter evidence when recenter
+metadata is declared); runtime code patches require gameplay behavior evidence;
+layer-aware presentation requires presentation evidence; and
+`GAME_TIMING_PATCH` requires the cadence, physics, timer, animation, particle,
+audio, and save-state claims. Payload claims remain required for every verified
+v3 runtime patch. Schemas v1 and v2 retain their legacy validation behavior.
+
 The current implementation provides manifest parsing, validation, exact
 identity matching, package import, temporary ROM patching, runtime Action
 Replay, guarded runtime overlays, and a session/lifecycle contract. Native

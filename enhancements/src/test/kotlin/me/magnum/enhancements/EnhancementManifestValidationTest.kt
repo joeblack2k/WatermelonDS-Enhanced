@@ -97,8 +97,10 @@ class EnhancementManifestValidationTest {
             name = "Verified",
             version = "1.0.0",
             status = EnhancementStatus.VERIFIED,
+            schemaVersion = 3,
             distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
             match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+            capabilities = setOf(EnhancementCapability.RUNTIME_CODE_PATCH),
             verification = EnhancementVerification(
                 guardedPayload = EnhancementClaim.VERIFIED,
                 payloadInput = EnhancementPayloadInput.VERIFIED,
@@ -108,7 +110,124 @@ class EnhancementManifestValidationTest {
             EnhancementManifestParser.validate(incomplete)
             fail("Expected incomplete verification to be rejected")
         } catch (error: IllegalArgumentException) {
-            assertTrue(error.message.orEmpty().contains("every timing contract claim"))
+            assertTrue(error.message.orEmpty().contains("applicable capability claim"))
+        }
+    }
+
+    @Test
+    fun schemaV3VerifiedClaimsAreIndependentAndCapabilityScoped() {
+        val base = EnhancementManifest(
+            schemaVersion = 3,
+            id = "verified.addon",
+            name = "Verified",
+            version = "1.0.0",
+            status = EnhancementStatus.VERIFIED,
+            distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
+            match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+            capabilities = emptySet(),
+        )
+        EnhancementManifestParser.validate(base)
+        listOf(
+            EnhancementCapability.RUNTIME_INPUT_PROTOCOL to
+                EnhancementVerification(
+                    inputTransport = EnhancementClaim.VERIFIED,
+                    lifecycle = EnhancementClaim.VERIFIED,
+                    recenter = EnhancementClaim.VERIFIED,
+                    guardedPayload = EnhancementClaim.VERIFIED,
+                    payloadInput = EnhancementPayloadInput.VERIFIED,
+                ).let { verification ->
+                    verification
+                },
+            EnhancementCapability.LAYER_AWARE_PRESENTATION to
+                EnhancementVerification(
+                    presentation = EnhancementClaim.VERIFIED,
+                    guardedPayload = EnhancementClaim.VERIFIED,
+                    payloadInput = EnhancementPayloadInput.VERIFIED,
+                ),
+            EnhancementCapability.GAME_TIMING_PATCH to
+                EnhancementVerification(
+                    cadence = EnhancementClaim.VERIFIED,
+                    gameplayPhysics = EnhancementClaim.VERIFIED,
+                    timers = EnhancementClaim.VERIFIED,
+                    animation = EnhancementClaim.VERIFIED,
+                    particles = EnhancementClaim.VERIFIED,
+                    audio = EnhancementClaim.VERIFIED,
+                    saveState = EnhancementClaim.VERIFIED,
+                    guardedPayload = EnhancementClaim.VERIFIED,
+                    payloadInput = EnhancementPayloadInput.VERIFIED,
+                ),
+        ).forEach { (capability, verification) ->
+            EnhancementManifestParser.validate(
+                base.copy(
+                    capabilities = if (capability == EnhancementCapability.RUNTIME_INPUT_PROTOCOL) {
+                        setOf(
+                            EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
+                            EnhancementCapability.CONTROLLER_AXIS_OWNER,
+                        )
+                    } else {
+                        setOf(capability)
+                    },
+                    runtimeCapability = if (capability == EnhancementCapability.RUNTIME_INPUT_PROTOCOL) {
+                        RuntimeCapability("transient-input", 1)
+                    } else {
+                        null
+                    },
+                    runtimeAxisXCode = if (capability == EnhancementCapability.RUNTIME_INPUT_PROTOCOL) 12 else null,
+                    runtimeAxisYCode = if (capability == EnhancementCapability.RUNTIME_INPUT_PROTOCOL) 13 else null,
+                    recenter = if (capability == EnhancementCapability.RUNTIME_INPUT_PROTOCOL) {
+                        EnhancementRecenter("R3", true, "recenterSequence")
+                    } else {
+                        null
+                    },
+                    verification = verification,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun legacyVerifiedManifestsRequireCompleteEvidence() {
+        val complete = EnhancementVerification(
+            cadence = EnhancementClaim.VERIFIED,
+            gameplayPhysics = EnhancementClaim.VERIFIED,
+            timers = EnhancementClaim.VERIFIED,
+            animation = EnhancementClaim.VERIFIED,
+            particles = EnhancementClaim.VERIFIED,
+            audio = EnhancementClaim.VERIFIED,
+            saveState = EnhancementClaim.VERIFIED,
+            guardedPayload = EnhancementClaim.VERIFIED,
+            payloadInput = EnhancementPayloadInput.VERIFIED,
+        )
+        listOf(1, 2).forEach { version ->
+            val base = EnhancementManifest(
+                schemaVersion = version,
+                id = "legacy.verified",
+                name = "Legacy verified",
+                version = "1.0.0",
+                status = EnhancementStatus.VERIFIED,
+                match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+                verification = complete,
+            )
+            EnhancementManifestParser.validate(base)
+
+            listOf(
+                base.copy(verification = complete.copy(payloadInput = EnhancementPayloadInput.MISSING)),
+                base.copy(verification = complete.copy(guardedPayload = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(cadence = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(gameplayPhysics = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(timers = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(animation = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(particles = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(audio = EnhancementClaim.UNVERIFIED)),
+                base.copy(verification = complete.copy(saveState = EnhancementClaim.UNVERIFIED)),
+            ).forEach { incomplete ->
+                try {
+                    EnhancementManifestParser.validate(incomplete)
+                    fail("Expected incomplete schema v$version VERIFIED manifest to be rejected")
+                } catch (_: IllegalArgumentException) {
+                    // Expected.
+                }
+            }
         }
     }
 
@@ -147,6 +266,86 @@ class EnhancementManifestValidationTest {
             fail("Expected verified payload input to be rejected")
         } catch (error: IllegalArgumentException) {
             assertTrue(error.message.orEmpty().contains("payload input"))
+        }
+    }
+
+    @Test
+    fun schemaV3NonRuntimeVerifiedManifestsDoNotNeedPayloadClaims() {
+        listOf(
+            emptySet<EnhancementCapability>() to EnhancementVerification(),
+            setOf(
+                EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
+                EnhancementCapability.CONTROLLER_AXIS_OWNER,
+            ) to EnhancementVerification(
+                inputTransport = EnhancementClaim.VERIFIED,
+                lifecycle = EnhancementClaim.VERIFIED,
+            ),
+            setOf(EnhancementCapability.LAYER_AWARE_PRESENTATION) to EnhancementVerification(
+                presentation = EnhancementClaim.VERIFIED,
+            ),
+            setOf(EnhancementCapability.GAME_TIMING_PATCH) to EnhancementVerification(
+                cadence = EnhancementClaim.VERIFIED,
+                gameplayPhysics = EnhancementClaim.VERIFIED,
+                timers = EnhancementClaim.VERIFIED,
+                animation = EnhancementClaim.VERIFIED,
+                particles = EnhancementClaim.VERIFIED,
+                audio = EnhancementClaim.VERIFIED,
+                saveState = EnhancementClaim.VERIFIED,
+            ),
+        ).forEach { (capabilities, verification) ->
+            EnhancementManifestParser.validate(
+                EnhancementManifest(
+                    schemaVersion = 3,
+                    id = "non.runtime",
+                    name = "Non-runtime",
+                    version = "1.0.0",
+                    status = EnhancementStatus.VERIFIED,
+                    distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
+                    match = EnhancementMatch("ASMP", headerChecksum = "12345678"),
+                    capabilities = capabilities,
+                    runtimeCapability = if (
+                        EnhancementCapability.RUNTIME_INPUT_PROTOCOL in capabilities
+                    ) RuntimeCapability("transient-input", 1) else null,
+                    runtimeAxisXCode = if (
+                        EnhancementCapability.RUNTIME_INPUT_PROTOCOL in capabilities
+                    ) 12 else null,
+                    runtimeAxisYCode = if (
+                        EnhancementCapability.RUNTIME_INPUT_PROTOCOL in capabilities
+                    ) 13 else null,
+                    verification = verification,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun schemaV3RuntimePatchRejectsMissingPayloadClaims() {
+        val runtime = manifest(EnhancementPatchType.ACTION_REPLAY, EnhancementPatchApply.RUNTIME).copy(
+            schemaVersion = 3,
+            status = EnhancementStatus.VERIFIED,
+            distributionStatus = EnhancementDistributionStatus.INSTALLABLE,
+            capabilities = setOf(EnhancementCapability.RUNTIME_CODE_PATCH),
+            verification = EnhancementVerification(
+                gameplayBehavior = EnhancementClaim.VERIFIED,
+            ),
+        )
+        listOf(
+            runtime,
+            runtime.copy(
+                verification = runtime.verification.copy(
+                    payloadInput = EnhancementPayloadInput.VERIFIED,
+                ),
+            ),
+        ).forEach { incomplete ->
+            try {
+                EnhancementManifestParser.validate(incomplete)
+                fail("Expected runtime payload claims to be rejected")
+            } catch (error: IllegalArgumentException) {
+                assertTrue(
+                    error.message.orEmpty().contains("payload input") ||
+                        error.message.orEmpty().contains("guarded payload"),
+                )
+            }
         }
     }
 
