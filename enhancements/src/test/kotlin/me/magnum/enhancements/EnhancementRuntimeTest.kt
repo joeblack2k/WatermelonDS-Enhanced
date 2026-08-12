@@ -119,6 +119,20 @@ class EnhancementRuntimeTest {
     }
 
     @Test
+    fun runtimeInputDeclaresNeutralizationForEveryLifecycleEvent() {
+        val owner = manifest("owner").copy(
+            runtimeLifecycle = EnhancementLifecycleEvent.entries.toSet(),
+        )
+        val session = EnhancementCatalog(listOf(owner)).createSession(identity, setOf(owner.id))
+
+        assertEquals(
+            EnhancementLifecycleEvent.entries.toSet(),
+            owner.runtimeLifecycle,
+        )
+        assertFalse(session.runtimeInput == null)
+    }
+
+    @Test
     fun runtimeCapabilityRequiresExactReportedMajorVersion() {
         val owner = manifest("owner", protocol = null).copy(
             runtimeCapability = RuntimeCapability("transient-input", 2),
