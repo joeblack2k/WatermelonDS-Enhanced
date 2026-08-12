@@ -68,6 +68,7 @@ fun RomGridCard(
     boxArtUrl: String? = null,
     boxArtLoading: Boolean = false,
     showAchievementBadge: Boolean,
+    isEnhanced: Boolean = false,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
@@ -182,8 +183,13 @@ fun RomGridCard(
             )
         }
 
-        if (isFocused) {
-            Box(Modifier.aspectRatio(DsBoxArtAspectRatio).fillMaxWidth().border(3.dp, colors.red, shape))
+        if (isFocused || isEnhanced) {
+            Box(
+                Modifier
+                    .aspectRatio(DsBoxArtAspectRatio)
+                    .fillMaxWidth()
+                    .border(3.dp, if (isFocused) colors.red else WatermelonColors.gold, shape)
+            )
         }
     }
 }

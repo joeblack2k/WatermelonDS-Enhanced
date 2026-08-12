@@ -2362,6 +2362,12 @@ Java_me_magnum_melonds_MelonEmulator_stopEmulation(JNIEnv* env, jobject thiz)
 }
 
 JNIEXPORT void JNICALL
+Java_me_magnum_melonds_MelonEmulator_clearTransientInputState(JNIEnv* env, jobject thiz)
+{
+    MelonDSAndroid::clearTransientInputState();
+}
+
+JNIEXPORT void JNICALL
 Java_me_magnum_melonds_MelonEmulator_onScreenTouch(JNIEnv* env, jobject thiz, jint x, jint y)
 {
     MelonDSAndroid::touchScreen(x, y);

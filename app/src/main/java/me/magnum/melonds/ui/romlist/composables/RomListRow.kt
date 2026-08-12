@@ -62,6 +62,7 @@ fun RomListRow(
     boxArtLoading: Boolean = false,
     allowConfiguration: Boolean,
     showAchievementBadge: Boolean,
+    isEnhanced: Boolean = false,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     onConfigClick: () -> Unit,
@@ -81,6 +82,7 @@ fun RomListRow(
 
     Row(
         modifier = modifier
+                .then(if (isEnhanced) Modifier.border(3.dp, WatermelonColors.gold) else Modifier)
             .fillMaxWidth()
             .scale(pressScale)
             .padding(horizontal = 12.dp, vertical = 1.dp)

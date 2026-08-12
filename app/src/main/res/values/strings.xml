@@ -1104,4 +1104,9 @@
         <item>Fit bottom</item>
         <item>Fit right</item>
     </string-array>
+    <string name="play_normal">Normal mode</string>
+    <string name="enhanced_launch_title">Play mode</string>
+    <string name="enhanced_launch_message">Choose how to launch this ROM.</string>
+    <string name="play_enhanced">Enhanced</string>
+    <string name="play_original">Normal</string>
 </resources>

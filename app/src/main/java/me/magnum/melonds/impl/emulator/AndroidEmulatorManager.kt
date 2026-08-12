@@ -703,6 +703,10 @@ class AndroidEmulatorManager(
         messageQueue.stop()
     }
 
+    override fun clearTransientInputState() {
+        MelonEmulator.clearTransientInputState()
+    }
+
     private fun applyEnhancedRuntimeOverlayIfPresent(): Boolean {
         if (enhancedRuntimeOverlay.isEmpty()) {
             return true
@@ -745,6 +749,7 @@ class AndroidEmulatorManager(
     }
 
     override fun cleanEmulator() {
+        clearTransientInputState()
         cameraManager.dispose()
         messageQueue.cleanup()
     }

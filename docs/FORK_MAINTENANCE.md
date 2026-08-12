@@ -10,7 +10,7 @@ payloads.
 - `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
 - `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
 - `origin/PR head`: `codex/watermelon-enhanced-pr@c68734fe226b70d60b20908b2af191293f084c7a`
-- `local HEAD`: `5784068e15cc77fab71adfbf8217fa06940ccb2e` plus the uncommitted M3 documentation batch
+- `local candidate tree`: `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus the complete uncommitted candidate source diff, including the two untracked source files
 - `PR`: `#1`, open and draft
 - `melonDS-android-lib` submodule URL:
   `https://github.com/joeblack2k/melonDS-android-lib.git`
@@ -77,14 +77,22 @@ The other initialized and clean submodules are pinned at:
 - `app/src/main/cpp/oboe`: `a81bb9f87d4105b84b682685d3bfbb5beca371d1`
 
 The M3 batch does not commit or push. APKs, build outputs, ROMs, credentials,
-and captures remain outside Git. The `app/src/main/res/values/strings.xml`
-resource change is part of this documentation batch.
+and captures remain outside Git. The complete uncommitted candidate source
+diff, including the two untracked source files above, is part of the evidence
+scope.
 
-The final lint evidence rerun was `2026-08-11 20:55:59 +0200` using
-`./gradlew lintGitHubProdDebug --no-daemon`: 630 errors, 573 warnings, and
-1 hint. The seven enhancement `MissingTranslation` annotations leave zero
+The current lint evidence rerun was `2026-08-12 12:38:21 +0200` using
+`./gradlew lintGitHubProdDebug --no-daemon`: 635 errors, 574 warnings, and
+1 hint. This is a checkout-wide candidate snapshot, not a comparison against
+the base; the counts are not being classified against the earlier 630/573
+result. The first failure is `DeviceLayoutDisplayMapper.kt:20`
+(`WrongConstant` for `createWindowContext`). The seven enhancement
+`MissingTranslation` annotations leave zero
 enhancement-owned `MissingTranslation` findings. One enhancement-owned
 `PluralsCandidate` warning remains for `enhancement_import_success`; it was
 left unsuppressed because the resource is a clear pluralization candidate.
-These are scoped enhancement counts, not a claim that every checkout-wide
-lint finding is baseline. The result does not close runtime or device gates.
+These are checkout-wide counts, not a claim that every finding is baseline.
+The external log SHA-256 is
+`11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
+The result does not close runtime or device gates. The candidate APK SHA-256
+is `37b32ac828008e0c4fcc7b411f5fe06f8a268ec78ac4ff4cefa78155091e740c`.

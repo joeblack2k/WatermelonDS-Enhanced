@@ -25,6 +25,8 @@
   "runtimeAxisYCode": 13,
   "runtimeDeadzone": 0.12,
   "runtimeSensitivity": 1.0,
+  "runtimeLifecycle": ["PAUSE", "RESET", "SAVE_STATE_LOAD", "CONTROLLER_DISCONNECT", "ACTIVITY_REPLACEMENT", "EMULATOR_STOP", "SESSION_TEARDOWN"],
+  "recenter": {"input": "R3", "edgeTriggered": true, "protocolField": "recenterSequence"},
   "patches": [
     {
       "type": "ACTION_REPLAY",

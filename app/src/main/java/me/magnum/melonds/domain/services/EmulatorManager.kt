@@ -69,6 +69,7 @@ interface EmulatorManager {
     suspend fun takeScreenshot(): Boolean
 
     fun stopEmulator()
+    fun clearTransientInputState()
 
     fun cleanEmulator()
 

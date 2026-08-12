@@ -1,8 +1,12 @@
 # WatermelonDS Enhanced acceptance audit
 
-Audit scope: Milestone 3, performed from local HEAD
-`5784068e15cc77fab71adfbf8217fa06940ccb2e` plus this uncommitted documentation
-batch, after M1/M2. Remote PR head is `c68734fe226b70d60b20908b2af191293f084c7a`
+Audit scope: bounded FIX-FIRST evidence correction, performed from candidate
+tree `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus these uncommitted documentation
+batch, after M1/M2. The complete uncommitted candidate source diff includes
+the two untracked source files
+`app/src/main/java/me/magnum/melonds/ui/romlist/EnhancementRomListState.kt` and
+`app/src/test/java/me/magnum/melonds/ui/emulator/TransientInputLifecycleContractTest.kt`.
+Remote PR head is `c68734fe226b70d60b20908b2af191293f084c7a`
 and base is `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`.
 This is an evidence record only. No payload was repaired, and no commit, push,
 or review was performed. The enhancement lint batch covers eight
@@ -11,7 +15,8 @@ scoped resource-level correction requested for this batch in
 `app/src/main/res/values/strings.xml`. That resource is part of this batch.
 One enhancement-owned `PluralsCandidate` warning remains for
 `enhancement_import_success` and is recorded below rather than suppressed.
-The final lint rerun was performed at `2026-08-11 20:55:59 +0200`.
+The current lint rerun was performed at `2026-08-12 12:38:21 +0200`; external
+log SHA-256: `11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
 
 ## Two-layer decision
 
@@ -35,14 +40,14 @@ acceptance.
 | origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; PR head resolves to `c68734fe226b70d60b20908b2af191293f084c7a` |
 | upstream | `https://github.com/SapphireRhodonite/melonDS-android.git`; the maintained base branch is `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9` |
 | audit base | `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) |
-| local head | `5784068e15cc77fab71adfbf8217fa06940ccb2e` plus this uncommitted batch |
+| local candidate tree | `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus the complete uncommitted candidate source diff, including the two untracked source files |
 | merge-base with upstream/master | `7e31d08a3e0e3801c0aca393832238395ac63983` |
 | gitlink | `melonDS-android-lib` at `e4022d7e7ada535ff5ea9d087db389cc46e8da62` |
 | PR status | PR #1 is OPEN and DRAFT; base `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9`; remote head `codex/watermelon-enhanced-pr` at `c68734fe226b70d60b20908b2af191293f084c7a` |
 
-### Documentation correction at current HEAD
+### Evidence scope at current candidate
 
-The requested audit HEAD is local `5784068e15cc77fab71adfbf8217fa06940ccb2e`; the PR
+The requested audit candidate is local `b9385a48402dbabc453c8b290ab5c73151b2b5a8`; the PR
 base is `Fet_OfflineChevos` at
 `1e0a463d785448ab47f78a12e2a88241df288cf9`. This correction updates only the
 three permitted documentation files plus the scoped resource annotation batch
@@ -54,9 +59,9 @@ README.md
 docs/FORK_MAINTENANCE.md
 ```
 
-No source code or payload was changed. The existing committed source and
-payload evidence below is therefore audited against the requested current
-HEAD, not against an older snapshot.
+The evidence below is audited against the candidate tree plus the complete
+uncommitted source diff, including the two untracked source files, not against
+an older snapshot or the base.
 
 ## Payload inventory
 
@@ -82,11 +87,11 @@ The manifest status remains `SOURCE_ONLY`.
 
 | Claim | Status | Evidence path / commit / hash | Boundary |
 | --- | --- | --- | --- |
-| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
-| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
-| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
-| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
-| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
+| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
+| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
+| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
+| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
+| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
 | Audio | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no audio capture or accepted runtime log | No repository artifact proves audio continuity or correct pitch/rate at the intended cadence. Manifest: `UNVERIFIED`. |
 | Save-state | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no save/load session evidence | No repository artifact proves save-state behavior while the source-only patch is active. Manifest: `UNVERIFIED`. |
 | Correct game speed | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no real gameplay run or speed measurement | A cadence counter, emulator overclock, or payload hash cannot prove 1x game speed. No new runtime claim is made. |
@@ -107,7 +112,7 @@ payload or establish any gameplay claim.
 ## Repository command matrix and evidence
 
 All commands below were run from this checkout at HEAD
-`5784068e15cc77fab71adfbf8217fa06940ccb2e`. They are repository evidence only;
+`b9385a48402dbabc453c8b290ab5c73151b2b5a8`. They are repository evidence only;
 none is runtime, distribution, or device acceptance.
 
 | Area | Command | Result |
@@ -126,7 +131,9 @@ none is runtime, distribution, or device acceptance.
 ### Lint result
 
 `./gradlew lintGitHubProdDebug --no-daemon`: **FAIL**, an actual current
-checkout-wide result with 630 errors, 573 warnings, and 1 hint. The seven
+checkout-wide result with 635 errors, 574 warnings, and 1 hint. This is a
+candidate snapshot, not a base comparison; the counts are not being classified
+against the earlier 630/573 result. The seven
 enhancement `MissingTranslation` annotations leave zero enhancement-owned
 `MissingTranslation` findings. One enhancement-owned `PluralsCandidate`
 warning remains for `enhancement_import_success` and is left explicitly
@@ -174,8 +181,8 @@ NOT ACCEPTED**:
 
 | R3 item | Evidence | Result |
 | --- | --- | --- |
-| Frontend key-down edge | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` at local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e`; the `KEYCODE_BUTTON_THUMBR` path sends recenter only for `ACTION_DOWN` with `repeatCount == 0`. | **PROVEN** |
-| Sequence transport / Slot-2 offset `0x06` | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` and `enhancements/src/main/kotlin/me/magnum/enhancements/CameraInputProtocol.kt` at local HEAD `5784068e15cc77fab71adfbf8217fa06940ccb2e` structurally transport `recenterSequence`; `enhancements/sm64ds.eu.right-stick-camera/README.md` records the required Slot-2 offset `0x06` read/compare/update structure. | **STRUCTURALLY PROVEN** |
+| Frontend key-down edge | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` at local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8`; the `KEYCODE_BUTTON_THUMBR` path sends recenter only for `ACTION_DOWN` with `repeatCount == 0`. | **PROVEN** |
+| Sequence transport / Slot-2 offset `0x06` | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` and `enhancements/src/main/kotlin/me/magnum/enhancements/CameraInputProtocol.kt` at local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` structurally transport `recenterSequence`; `enhancements/sm64ds.eu.right-stick-camera/README.md` records the required Slot-2 offset `0x06` read/compare/update structure. | **STRUCTURALLY PROVEN** |
 | Game-side persistent consumer | `enhancements/sm64ds.eu.right-stick-camera/README.md` states that the existing evidence does not prove the persistent addon-state slot or the required payload words; the checked-in assembly remains only a rebuild input. | **ABSENT / NOT PROVEN** |
 | Physical result | Existing audit evidence records no accepted AYN Thor/device result, including camera or persistent-state behavior. | **UNAVAILABLE** |
 
@@ -201,7 +208,7 @@ Evidence directory: `/tmp/watermelon-enhanced-m2-20260811-203230`.
 | --- | --- |
 | APK | `app/build/outputs/apk/gitHubProd/debug/app-gitHub-prod-debug.apk` |
 | Installed M2 APK SHA-256 | `09c3672d426162fec397d7500001fff732948bb86c42a9dd5dda51fa42890f4c` |
-| Final local rebuild APK SHA-256 | `547c911a52b99cba4eab995d55d9f47bd9d82ce250ae5844f67c50664fd08f55` |
+| Candidate APK SHA-256 | `37b32ac828008e0c4fcc7b411f5fe06f8a268ec78ac4ff4cefa78155091e740c` |
 | Package and version | `me.magnum.melondualds.dev`, version `0.7.0.rc5`, versionCode `39` |
 | SDK metadata | min SDK `24`, target/compile SDK `36` |
 | Packaged APK ABI contents | `arm64-v8a`, `armeabi-v7a`, and `x86_64` |
@@ -215,7 +222,7 @@ The exact final-worktree checks rerun for this batch were:
 - All three renamed SM64DS Python tool suites and `enhancements/tools/test_rom_identity.py`: **PASS**
 - Scoped generic isolation, secret, ROM, binary/object, and capture scans: **PASS**
 - `git diff --check`: **PASS**
-- `./gradlew lintGitHubProdDebug --no-daemon`: **FAIL**, 630 errors, 573 warnings, 1 hint; seven enhancement `MissingTranslation` annotations leave 0 enhancement-owned `MissingTranslation` findings, with one enhancement-owned `PluralsCandidate` warning remaining for `enhancement_import_success`. The scoped enhancement counts do not classify every checkout-wide lint finding as baseline. Rerun: `2026-08-11 20:55:59 +0200`.
+- `./gradlew lintGitHubProdDebug --no-daemon`: **FAIL**, 635 errors, 574 warnings, 1 hint. The scoped enhancement counts do not classify every checkout-wide lint finding as baseline. Rerun: `2026-08-12 12:38:21 +0200`; log SHA-256: `11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
 
 The camera and 60 FPS packages remain `SOURCE_ONLY`. Licensing/provenance,
 legal ROM inputs, RetroAchievements compatibility, enhancement runtime
@@ -232,11 +239,17 @@ enhancement runtime acceptance remain blocked.
 This bounded M3 attempt used ADB serial `6b0af897` and the current locally
 assembled APK:
 `app/build/outputs/apk/gitHubProd/debug/app-gitHub-prod-debug.apk`
-(SHA-256 `a7641d5503df4a64543e03d17c480ec91a8540c245ca690f412739739f1e6ba4`).
+(installed APK SHA-256
+`a7641d5503df4a64543e03d17c480ec91a8540c245ca690f412739739f1e6ba4`).
 The APK installed successfully over package
 `me.magnum.melondualds.dev`, version `0.7.0.rc5`, versionCode `39`.
 ThorDS package `io.github.joeblack2k.thords` remained installed at version
 `0.1.2-beta.2.8`; its package state was captured before and after.
+
+Separately, the current local candidate APK has SHA-256
+`37b32ac828008e0c4fcc7b411f5fe06f8a268ec78ac4ff4cefa78155091e740c`. Its ABI
+contents were inspected locally, but this candidate was not device-validated
+and is not the APK installation evidence recorded above.
 
 The existing directory `/sdcard/Roms/NDS` was inspected and contains the
 requested ROM at the exact requested path. It also contains an existing
@@ -288,5 +301,113 @@ claim is made.
 M3 normal EU launch and actual game-frame acceptance are **PROVEN**. Add-on
 gameplay, camera, widescreen, 60fps, and explicit empty
 `enabledEnhancements` config acceptance remain open. The earlier USB-dialog
-blocker was cleared by the reboot. No source, payload, license, workflow,
-ROM, save, or ThorDS change was made.
+blocker was cleared by the reboot. This evidence statement does not establish
+any additional source, payload, license, workflow, ROM, save, or ThorDS
+acceptance.
+
+## M1 private widescreen fixture evidence
+
+This bounded M1 follow-up used ADB serial `6b0af897` and the corrected private
+fixture at `/tmp/watermelon-m1-20260811-232444/private-widescreen-installable.zip`.
+The first fixture attempt failed for packaging only: the archive used a
+`bundle/` wrapper, which did not match the declared package paths. The fixture
+was rebuilt before import with `manifest.json` at the package root and
+`patches/widescreen.ards` at the manifest-declared path.
+
+The corrected fixture was imported successfully through the normal SAF flow
+exactly once. `run-as` evidence proves the installed files:
+
+```text
+files/Enhancements/sm64ds.eu.widescreen/manifest.json
+files/Enhancements/sm64ds.eu.widescreen/patches/widescreen.ards
+```
+
+The fixture manifest was private-installable with `distributionStatus:
+INSTALLABLE`, exact EU `ASMP` revision matching, and verified
+`payloadInput`/`guardedPayload` evidence. The committed widescreen source-only
+manifests were not changed; the direct source-only ZIP remains rejected by the
+installer contract.
+
+The existing EU ROM and adjacent save remained unchanged. No USA ROM was
+launched or modified. The existing EU save remains 8 KiB and colocated with
+the matching ROM. Raw M1 evidence remains under
+`/tmp/watermelon-m1-20260811-232444/`; no evidence was staged or committed.
+
+This proves private normal SAF import and materialized package paths only.
+Per-ROM activation, guard activation, wrong-guard fail-closed 4:3 fallback,
+paired viewport/geometry screenshots, and disabled-add-on comparison remain
+**UNPROVEN** because normal navigation did not reach the per-ROM activation
+UI. No widescreen visual or guard acceptance claim is made from the successful
+import alone.
+
+### M1 normal ROM config evidence
+
+Subsequent normal UI evidence proves that the retained package is exposed by
+the EU ROM's normal ROM Config UI. The screenshot
+`/tmp/watermelon-m1-20260811-232444/enhancement-enabled.png` shows the
+`sm64ds.eu.widescreen` toggle **ON**. The redacted/config evidence
+`/tmp/watermelon-m1-20260811-232444/rom_data.json`, checked with `jq`, proves
+that the EU ROM has exactly:
+
+```json
+["sm64ds.eu.widescreen"]
+```
+
+in `enabledEnhancements`. This proves normal UI per-ROM activation/config
+selection for the EU ROM; it does not by itself prove guard activation,
+widescreen presentation, or the wrong-guard 4:3 fallback.
+
+The copied Thor save artifacts are confined to the untracked
+`/tmp/m1-evidence-20260811/thor-saves` evidence directory and were not used to alter
+device data. The device's existing EU save remained unchanged; its recorded
+SHA-256 is
+`56a27e0d78ea2ea6a767567897b6167bf3774f0b064a10c3d56054ac41d067b0`. USA was
+not launched or modified. The committed source-only manifests remain
+unchanged.
+
+### M1 gameplay-capture correction
+
+The attempted post-activation gameplay capture is invalid as EU evidence. After
+force-stop and relaunch, the assumed right-side **Continue Playing** card
+launched the USA revision, identified in bounded logs as `ASME`, not the EU
+`ASMP` ROM. The app was immediately force-stopped. No debug receiver, direct
+configuration mutation, or other non-UI launch path was used. This USA launch
+is a negative-control observation and must not count as EU gameplay,
+widescreen, guard, viewport, or geometry evidence.
+
+The current read-only `rom_data.json` state remains the authoritative config
+snapshot: USA has `enabledEnhancements=[]`, while EU has exactly
+`enabledEnhancements=["sm64ds.eu.widescreen"]`. Device saves remain unchanged:
+the EU save SHA-256 is
+`56a27e0d78ea2ea6a767567897b6167bf3774f0b064a10c3d56054ac41d067b0`, and the
+USA zero-byte save SHA-256 is
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Accordingly, no EU gameplay or visual acceptance claim is made from that
+capture attempt.
+
+### M1 renderer/runtime correction
+
+A later search-result long-press on the second Super Mario 64 DS entry opened
+the normal ROM details screen and its normal Play path. The resulting emulator
+session rendered black; bounded logcat showed repeated
+`melonDS: EGL_BAD_ACCESS` and `Failed to use OpenGL context` messages. The
+session was force-stopped. This is a renderer/runtime gate, not visual
+widescreen or gameplay evidence, and no such claim is made.
+
+The final read-only `rom_data.json` state remains unchanged: USA has
+`enabledEnhancements=[]`, and EU has exactly
+`enabledEnhancements=["sm64ds.eu.widescreen"]`.
+
+### M1 clean EU baseline
+
+After a Thor reboot and normal app launch, the third **Continue Playing** card
+was verified by fresh log evidence as EU `ASMP`. The EU add-on was disabled
+through the normal ROM Config UI, and the session was launched normally. It
+remained black after 10 seconds. The fresh log captured
+`Inserted cart with game code: ASMP` and `Game is now booting`, with no new EGL
+error lines in the captured tail. The session was force-stopped afterward.
+
+The final read-only `rom_data.json` state is now USA
+`enabledEnhancements=[]` and EU `enabledEnhancements=[]`. This is a repeatable
+SM64DS baseline black-screen gate, not widescreen evidence; it provides no
+visual gameplay or widescreen acceptance.

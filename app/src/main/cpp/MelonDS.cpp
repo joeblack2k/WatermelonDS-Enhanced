@@ -1595,6 +1595,12 @@ namespace MelonDSAndroid
         cleanupOpenGlContext();
     }
 
+    void clearTransientInputState()
+    {
+        if (instance)
+            instance->clearTransientInputState();
+    }
+
     void cleanup()
     {
         cleanupAudio();

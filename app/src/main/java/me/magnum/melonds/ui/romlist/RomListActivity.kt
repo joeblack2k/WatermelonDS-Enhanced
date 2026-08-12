@@ -67,6 +67,11 @@ class RomListActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRomListBinding
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshEnhancementAvailability()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
@@ -100,9 +105,18 @@ class RomListActivity : AppCompatActivity() {
 
         emulatorLauncherValidatorDelegate = EmulatorLaunchValidatorDelegate(this, object : EmulatorLaunchValidatorDelegate.Callback {
             override fun onRomValidated(rom: Rom) {
-                val intent = EmulatorActivity.getRomEmulatorActivityIntent(this@RomListActivity, rom)
-                startActivity(intent)
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                val enhancedIds = viewModel.enhancementAvailability.value[rom.uri.toString()]?.enhancedLaunchIds
+                if (enhancedIds == null) {
+                    startValidatedRom(rom, null)
+                    return
+                }
+                AlertDialog.Builder(this@RomListActivity)
+                    .setTitle(R.string.enhanced_launch_title)
+                    .setMessage(R.string.enhanced_launch_message)
+                    .setPositiveButton(R.string.play_enhanced) { _, _ -> startValidatedRom(rom, enhancedIds.toSet()) }
+                    .setNeutralButton(R.string.play_original) { _, _ -> startValidatedRom(rom, emptySet()) }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
             }
 
             override fun onFirmwareValidated(consoleType: ConsoleType) {
@@ -442,6 +456,11 @@ class RomListActivity : AppCompatActivity() {
 
     private fun launchRom(rom: Rom) {
         emulatorLauncherValidatorDelegate.validateRom(rom)
+    }
+
+    private fun startValidatedRom(rom: Rom, enhancementOverride: Set<String>?) {
+        viewModel.setRomLastPlayedNow(rom)
+        startActivity(EmulatorActivity.getRomEmulatorActivityIntent(this, rom, enhancementOverride))
     }
 
     private fun launchFirmware(consoleType: ConsoleType) {

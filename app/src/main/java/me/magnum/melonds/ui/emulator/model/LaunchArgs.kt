@@ -11,7 +11,7 @@ import me.magnum.melonds.parcelables.RomParcelable
 import me.magnum.melonds.ui.emulator.EmulatorActivity
 
 sealed class LaunchArgs {
-    data class RomObject(val rom: Rom) : LaunchArgs()
+    data class RomObject(val rom: Rom, val enhancementOverride: Set<String>? = null) : LaunchArgs()
     data class RomUri(val uri: Uri) : LaunchArgs()
     data class RomPath(val path: String) : LaunchArgs()
     data class Firmware(val consoleType: ConsoleType) : LaunchArgs()
@@ -29,7 +29,7 @@ sealed class LaunchArgs {
             } else {
                 val romParcelable = savedStateHandle.get<RomParcelable>(EmulatorActivity.KEY_ROM)
                 if (romParcelable != null) {
-                    RomObject(romParcelable.rom)
+                    RomObject(romParcelable.rom, savedStateHandle.get<Array<String>>(EmulatorActivity.KEY_ENHANCEMENT_OVERRIDE)?.toSet())
                 } else {
                     val uri = when (val uriEntry = savedStateHandle.get<Any>(EmulatorActivity.KEY_URI)) {
                         is String -> uriEntry.toUri()
@@ -67,7 +67,10 @@ sealed class LaunchArgs {
                 val romParcelable = extras?.parcelable<RomParcelable>(EmulatorActivity.KEY_ROM)
 
                 when {
-                    romParcelable?.rom != null -> RomObject(romParcelable.rom)
+                    romParcelable?.rom != null -> RomObject(
+                        romParcelable.rom,
+                        extras.getStringArray(EmulatorActivity.KEY_ENHANCEMENT_OVERRIDE)?.toSet(),
+                    )
                     intent.data != null -> RomUri(intent.data!!)
                     extras?.containsKey(EmulatorActivity.KEY_PATH) == true -> {
                         val romPath = extras.getString(EmulatorActivity.KEY_PATH)!!

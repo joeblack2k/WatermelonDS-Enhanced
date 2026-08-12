@@ -258,6 +258,7 @@ namespace MelonDSAndroid {
     extern RewindWindow getRewindWindow();
     extern bool takeScreenshot();
     extern void stop();
+    extern void clearTransientInputState();
     extern void cleanup();
 }
 

@@ -11,10 +11,9 @@
     "revision": 0,
     "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
   },
-  "capabilities": [
-    "RUNTIME_CODE_PATCH"
-  ],
+  "capabilities": ["RUNTIME_CODE_PATCH"],
   "patches": [],
+  "conflictsWith": ["sm64ds.eu.widescreen"],
   "hardcoreCompatible": false,
   "verification": {
     "cadence": "UNVERIFIED",

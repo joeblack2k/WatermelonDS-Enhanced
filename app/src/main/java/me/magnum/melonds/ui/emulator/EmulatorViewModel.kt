@@ -703,8 +703,10 @@ class EmulatorViewModel @Inject constructor(
     }
 
     fun onRomLaunchValidated(rom: Rom) {
+        val enhancementOverride =
+            (_emulatorState.value as? EmulatorState.ValidatingRom)?.enhancementOverride
         sessionCoroutineScope.launch {
-            launchRom(refreshRomForLaunch(rom))
+            launchRom(refreshRomForLaunch(rom), enhancementOverride)
         }
     }
 
@@ -716,18 +718,18 @@ class EmulatorViewModel @Inject constructor(
 
     private fun launchEmulator(args: LaunchArgs) {
         when (args) {
-            is LaunchArgs.RomObject -> loadRom(args.rom)
+            is LaunchArgs.RomObject -> loadRom(args.rom, args.enhancementOverride)
             is LaunchArgs.RomUri -> loadRom(args.uri)
             is LaunchArgs.RomPath -> loadRom(args.path)
             is LaunchArgs.Firmware -> _emulatorState.value = EmulatorState.ValidatingFirmware(args.consoleType)
         }
     }
 
-    private fun loadRom(rom: Rom) {
+    private fun loadRom(rom: Rom, enhancementOverride: Set<String>? = null) {
         viewModelScope.launch {
             resetEmulatorState(EmulatorState.LoadingRom())
             sessionCoroutineScope.launch {
-                _emulatorState.value = EmulatorState.ValidatingRom(refreshRomForLaunch(rom))
+                _emulatorState.value = EmulatorState.ValidatingRom(refreshRomForLaunch(rom), enhancementOverride)
             }
         }
     }
@@ -764,21 +766,22 @@ class EmulatorViewModel @Inject constructor(
         }
     }
 
-    private suspend fun launchRom(rom: Rom, allowEnhancedFallback: Boolean = true): Unit = coroutineScope {
+    private suspend fun launchRom(rom: Rom, enhancementOverride: Set<String>? = null, allowEnhancedFallback: Boolean = true): Unit = coroutineScope {
         try {
             _emulatorState.value = EmulatorState.LoadingRom()
             currentRom = rom
             activeRomConfig.value = rom
             val romInfo = getRomInfo(rom)
-            activeEnhancementSession = if (rom.config.enabledEnhancements.isEmpty()) {
+            val enabledEnhancements = enhancementOverride ?: rom.config.enabledEnhancements
+            activeEnhancementSession = if (enabledEnhancements.isEmpty()) {
                 null
             } else {
                 val catalog = enhancementCatalogLoader.load()
                 val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
                 identity?.let {
                     val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
-                    val reconciled = rom.config.enabledEnhancements.intersect(matchingIds)
-                    if (reconciled != rom.config.enabledEnhancements) {
+                    val reconciled = enabledEnhancements.intersect(matchingIds)
+                    if (enhancementOverride == null && reconciled != rom.config.enabledEnhancements) {
                         val config = rom.config.copy(enabledEnhancements = reconciled)
                         romsRepository.updateRomConfig(rom, config)
                         currentRom = rom.copy(config = config)
@@ -793,7 +796,7 @@ class EmulatorViewModel @Inject constructor(
                         )
                     }
                 } ?: run {
-                    require(rom.config.enabledEnhancements.isEmpty()) {
+                    require(enabledEnhancements.isEmpty()) {
                         "Enhanced add-ons require a readable ROM header"
                     }
                     null
@@ -811,7 +814,7 @@ class EmulatorViewModel @Inject constructor(
                 Log.w("EmulatorViewModel", "Failed to prepare enhanced ROM", exception)
                 resetEmulatorState(EmulatorState.LoadingRom())
                 sessionFallbackCoordinator.launchOnFreshSession {
-                    launchRom(rom.copy(config = rom.config.copy(enabledEnhancements = emptySet())), false)
+                    launchRom(rom, enhancementOverride = emptySet(), allowEnhancedFallback = false)
                 }
                 return@coroutineScope
             }
@@ -840,7 +843,7 @@ class EmulatorViewModel @Inject constructor(
                     decideRetroAchievementsLaunchDecision(
                         rom,
                         endpointSnapshot,
-                        hardcoreAllowed = activeEnhancementSession?.hardcoreCompatible != false,
+                        hardcoreAllowed = true,
                     )
                 }.getOrElse { throwable ->
                     Log.e("EmulatorViewModel", "RetroAchievements launch decision failed for '${rom.name}'", throwable)
@@ -898,6 +901,7 @@ class EmulatorViewModel @Inject constructor(
                 }
                 is RomLaunchResult.LaunchSuccessful -> {
                     val session = activeEnhancementSession
+                    var enhancedHardcoreAllowed = true
                     if (session != null) {
                         val requestedAddOnIds = session.addOns.mapTo(mutableSetOf()) { it.id }
                         val requests = mutableMapOf<String, EnhancementActivationRequest>()
@@ -908,13 +912,12 @@ class EmulatorViewModel @Inject constructor(
                                 reportCapabilities = {
                                     emulatorManager.enhancedRuntimeCapabilities()
                                 },
-                                prepare = { addOnId ->
+                                prepare = { addOnId, capabilities ->
                                     val addOn = session.addOns.single { it.id == addOnId }
                                     runCatching {
                                         val single = EnhancementSession(listOf(addOn))
                                         if (single.declaredRuntimeCapability != null &&
-                                            single.declaredRuntimeCapability !in
-                                            emulatorManager.enhancedRuntimeCapabilities()
+                                            single.declaredRuntimeCapability !in capabilities
                                         ) {
                                             return@runCatching false
                                         }
@@ -937,10 +940,8 @@ class EmulatorViewModel @Inject constructor(
                                     val enhancedSession = session.retain(activeIds)
                                     enhancedSession to enhancedCheatLoader.load(enhancedSession)
                                 },
-                                expose = { activeIds ->
-                                    session.retain(activeIds).runtimeInputIfSupported(
-                                        emulatorManager.enhancedRuntimeCapabilities(),
-                                    ) to null
+                                expose = { activeIds, capabilities ->
+                                    session.retain(activeIds).runtimeInputIfSupported(capabilities) to null
                                 },
                                 hardcoreAllowed = { activeIds ->
                                     session.retain(activeIds).hardcoreCompatible
@@ -960,19 +961,26 @@ class EmulatorViewModel @Inject constructor(
                                 config = rom.config.copy(enabledEnhancements = emptySet()),
                             )
                             sessionFallbackCoordinator.launchOnFreshSession {
-                                launchRom(originalRom, allowEnhancedFallback = false)
+                                launchRom(originalRom, enhancementOverride = emptySet(), allowEnhancedFallback = false)
                             }
                             return@coroutineScope
                         }
                         val (enhancedSession, enhancedCheats) = enhancedLaunch.composed
+                        enhancedHardcoreAllowed = enhancedLaunch.hardcoreAllowed
                         activeEnhancementSession = enhancedSession
                         _activeRuntimeInputProtocol.value = enhancedLaunch.runtimeInput as EnhancementRuntimeInput?
                         emulatorManager.updateCheats(baseCheats + enhancedCheats)
+                        if (isRetroAchievementsEnabledForLaunch && !enhancedHardcoreAllowed) {
+                            launchDecision = launchDecision.copy(
+                                sessionMode = RetroAchievementsSessionMode.SOFTCORE,
+                                isHardcoreEligibleAfterOnlineStart = false,
+                            )
+                        }
                     } else {
                         emulatorManager.updateCheats(baseCheats)
                     }
                     if (isRetroAchievementsEnabledForLaunch) {
-                        val activeHardcoreAllowed = activeEnhancementSession?.hardcoreCompatible != false
+                        val activeHardcoreAllowed = enhancedHardcoreAllowed
                         val effectiveDecision = runCatching {
                             decideRetroAchievementsLaunchDecision(
                                 rom,
@@ -2854,6 +2862,7 @@ class EmulatorViewModel @Inject constructor(
     }
 
     private fun resetEmulatorState(newState: EmulatorState) {
+        emulatorManager.clearTransientInputState()
         retroAchievementsEndpointProvider.endSession()
         raBootstrapJob?.cancel()
         raSessionJob?.cancel()
@@ -6759,6 +6768,7 @@ class EmulatorViewModel @Inject constructor(
         sessionCoroutineScope.cancel()
         unloadAndReleaseActiveRuntimeAuthenticationLease("view_model_cleared")
         retroAchievementsEndpointProvider.endSession()
+        emulatorManager.clearTransientInputState()
         emulatorManager.cleanEmulator()
     }
 

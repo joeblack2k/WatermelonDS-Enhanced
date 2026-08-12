@@ -51,8 +51,8 @@ The core is kept in sync with melonDS 1.0 and later upstream changes.
 The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
 upstream is `SapphireRhodonite/melonDS-android`; the fork's base is commit
 `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) and the
-current local enhancement head is
-`5784068e15cc77fab71adfbf8217fa06940ccb2e`, with `origin`/PR head at
+current candidate tree is
+`b9385a48402dbabc453c8b290ab5c73151b2b5a8`, with `origin`/PR head at
 `c68734fe226b70d60b20908b2af191293f084c7a`. The `melonDS-android-lib`
 submodule is sourced from
 `joeblack2k/melonDS-android-lib` on the public branch
@@ -63,8 +63,9 @@ name is stale and is not used.
 The current PR is PR #1, open and draft, with base
 `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9` and head
 `codex/watermelon-enhanced-pr@c68734fe226b70d60b20908b2af191293f084c7a`;
-local M3 documentation is uncommitted on top of
-`5784068e15cc77fab71adfbf8217fa06940ccb2e`.
+the complete uncommitted candidate source diff, including the two untracked
+source files `app/src/main/java/me/magnum/melonds/ui/romlist/EnhancementRomListState.kt`
+and `app/src/test/java/me/magnum/melonds/ui/emulator/TransientInputLifecycleContractTest.kt`.
 
 M3 evidence is recorded in [`docs/ENHANCED_ACCEPTANCE.md`](docs/ENHANCED_ACCEPTANCE.md).
 The repository build and baseline debug launch are evidenced, but distribution
@@ -72,13 +73,18 @@ and enhancement runtime acceptance remain blocked. The camera and 60 FPS
 add-ons remain `SOURCE_ONLY`; licensing, ROM inputs, RetroAchievements,
 gameplay, and physical enhancement/ROM launch, controls, and gameplay gates
 remain open. Any black screenshot is non-UI evidence only.
-The final lint rerun on `2026-08-11 20:55:59 +0200` found 630 errors,
-573 warnings, and 1 hint; the seven enhancement `MissingTranslation`
+The current lint rerun on `2026-08-12 12:38:21 +0200` failed with 635 errors,
+574 warnings, and 1 hint. This is a checkout-wide candidate snapshot, not a
+base comparison; the counts are not being classified against the earlier
+630/573 result. The seven enhancement `MissingTranslation`
 annotations leave zero enhancement-owned `MissingTranslation` findings. One
 enhancement-owned `PluralsCandidate` warning remains for
 `enhancement_import_success`; `strings.xml` is part of this documentation
-batch. These counts are scoped to the enhancement resources and do not
-reclassify the checkout-wide lint result.
+batch. These counts are checkout-wide and do not classify every finding as
+baseline. The external log SHA-256 is
+`11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
+The candidate APK SHA-256 is
+`37b32ac828008e0c4fcc7b411f5fe06f8a268ec78ac4ff4cefa78155091e740c`.
 
 For the bounded update procedure and the exact reference model, see
 [`docs/FORK_MAINTENANCE.md`](docs/FORK_MAINTENANCE.md).

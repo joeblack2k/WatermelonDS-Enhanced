@@ -27,9 +27,6 @@ def main() -> int:
     assert manifest.get("requiresCapabilities", []) == []
     assert manifest["distributionStatus"] == "SOURCE_ONLY"
     assert all("THOR" not in capability for capability in manifest["capabilities"])
-    assert set(manifest.get("requiresCapabilities", [])).issubset(
-        manifest["capabilities"]
-    )
     assert manifest["id"] not in manifest.get("conflictsWith", [])
     camera = json.loads(
         (ROOT.parent / "sm64ds.eu.right-stick-camera" / "manifest.json").read_text()

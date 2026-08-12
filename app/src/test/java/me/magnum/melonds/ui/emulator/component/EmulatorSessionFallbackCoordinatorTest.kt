@@ -23,11 +23,11 @@ class EmulatorSessionFallbackCoordinatorTest {
             orchestrateEnhancedLaunch(
                 addOnIds = emptyList(),
                 loadRomPaused = { events += "load" },
-                reportCapabilities = { events += "capabilities" },
-                prepare = { events += "prepare"; true },
+                reportCapabilities = { events += "capabilities"; emptySet() },
+                prepare = { _, _ -> events += "prepare"; true },
                 activate = { events += "activate"; emptySet() },
                 compose = { events += "compose"; it },
-                expose = { events += "expose"; null to null },
+                expose = { _, _ -> events += "expose"; null to null },
                 hardcoreAllowed = { events += "hardcore"; true },
             )
             fail("empty enhanced launch must be rejected")
@@ -44,11 +44,11 @@ class EmulatorSessionFallbackCoordinatorTest {
         val launch = source.substringAfter("private suspend fun launchRom(")
             .substringBefore("private fun isRetroAchievementsEnabledForLaunch")
 
-        assertTrue(launch.contains("if (rom.config.enabledEnhancements.isEmpty())"))
+        assertTrue(launch.contains("if (enabledEnhancements.isEmpty())"))
         assertTrue(launch.contains("if (reconciled.isEmpty())"))
         assertTrue(launch.contains("catalog.createSession"))
         assertTrue(launch.indexOf("if (reconciled.isEmpty())") < launch.indexOf("catalog.createSession"))
-        assertTrue(launch.indexOf("if (rom.config.enabledEnhancements.isEmpty())") < launch.indexOf("enhancementCatalogLoader.load()"))
+        assertTrue(launch.indexOf("if (enabledEnhancements.isEmpty())") < launch.indexOf("enhancementCatalogLoader.load()"))
     }
 
     @Test
@@ -57,9 +57,9 @@ class EmulatorSessionFallbackCoordinatorTest {
         val result = orchestrateEnhancedLaunch(
             addOnIds = listOf("accepted", "rejected"),
             loadRomPaused = { events += "load:paused" },
-            reportCapabilities = { events += "capabilities:actual" },
-            prepare = {
-                events += "prepare:$it"
+            reportCapabilities = { events += "capabilities:actual"; emptySet() },
+            prepare = { id, _ ->
+                events += "prepare:$id"
                 true
             },
             activate = {
@@ -70,8 +70,8 @@ class EmulatorSessionFallbackCoordinatorTest {
                 events += "compose:$it"
                 "base+${it.joinToString("+")}"
             },
-            expose = {
-                events += "expose:$it"
+            expose = { ids, _ ->
+                events += "expose:$ids"
                 "input" to "presentation"
             },
             hardcoreAllowed = {
@@ -105,19 +105,17 @@ class EmulatorSessionFallbackCoordinatorTest {
         val result = orchestrateEnhancedLaunch(
             addOnIds = listOf("incompatible"),
             loadRomPaused = {},
-            reportCapabilities = {},
-            prepare = { true },
+            reportCapabilities = { emptySet() },
+            prepare = { _, _ -> true },
             activate = { it.toSet() },
             compose = { it },
-            expose = { null to null },
+            expose = { _, _ -> null to null },
             hardcoreAllowed = { false },
         )
 
         assertEquals(setOf("incompatible"), result.activeIds)
         assertFalse(result.hardcoreAllowed)
-        assertTrue(result.effectivePolicy().cheatsAllowed)
-        assertTrue(result.effectivePolicy().saveStatesAllowed)
-        assertTrue(result.effectivePolicy().retroAchievementsAllowed)
+        assertEquals(emptySet<String>(), result.capabilities)
     }
 
     @Test
@@ -125,20 +123,15 @@ class EmulatorSessionFallbackCoordinatorTest {
         val result = orchestrateEnhancedLaunch(
             addOnIds = listOf("compatible"),
             loadRomPaused = {},
-            reportCapabilities = {},
-            prepare = { true },
+            reportCapabilities = { emptySet() },
+            prepare = { _, _ -> true },
             activate = { it.toSet() },
             compose = { it },
-            expose = { null to null },
+            expose = { _, _ -> null to null },
             hardcoreAllowed = { true },
         )
 
-        val policy = result.effectivePolicy()
-        assertEquals(setOf("compatible"), policy.activeIds)
-        assertTrue(policy.hardcoreAllowed)
-        assertFalse(policy.cheatsAllowed)
-        assertFalse(policy.saveStatesAllowed)
-        assertTrue(policy.retroAchievementsAllowed)
+        assertEquals(emptySet<String>(), result.capabilities)
     }
 
     @Test
@@ -147,11 +140,11 @@ class EmulatorSessionFallbackCoordinatorTest {
         val result = orchestrateEnhancedLaunch(
             addOnIds = listOf("camera"),
             loadRomPaused = {},
-            reportCapabilities = {},
-            prepare = { true },
+            reportCapabilities = { emptySet() },
+            prepare = { _, _ -> true },
             activate = { it.toSet() },
             compose = { it },
-            expose = { null to null },
+            expose = { _, _ -> null to null },
             hardcoreAllowed = { true },
         )
 
@@ -213,11 +206,11 @@ class EmulatorSessionFallbackCoordinatorTest {
         val result = orchestrateEnhancedLaunch(
             addOnIds = listOf("camera"),
             loadRomPaused = {},
-            reportCapabilities = {},
-            prepare = { false },
+            reportCapabilities = { emptySet() },
+            prepare = { _, _ -> false },
             activate = { it.toSet() },
             compose = { it },
-            expose = { null to null },
+            expose = { _, _ -> null to null },
             hardcoreAllowed = { true },
         )
 

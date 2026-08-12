@@ -13,7 +13,7 @@
       "ba3c4052e00c5cc31df5d5534c39de1b"
     ]
   },
-  "capabilities": [],
+  "capabilities": ["RUNTIME_CODE_PATCH"],
   "patches": [
     {
       "type": "ACTION_REPLAY",
@@ -33,6 +33,7 @@
       "sha256": "6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7"
     }
   ],
+  "conflictsWith": ["sm64ds.eu.widescreen"],
   "hardcoreCompatible": false,
   "verification": {
     "cadence": "UNVERIFIED",

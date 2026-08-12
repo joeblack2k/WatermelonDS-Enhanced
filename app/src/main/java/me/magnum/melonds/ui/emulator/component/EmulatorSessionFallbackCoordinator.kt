@@ -1,6 +1,7 @@
 package me.magnum.melonds.ui.emulator.component
 
 import kotlinx.coroutines.Job
+import me.magnum.enhancements.RuntimeCapability
 
 /**
  * Keeps enhanced-launch fallback at one explicit session boundary.
@@ -31,19 +32,8 @@ internal data class EnhancedOrchestrationResult<T>(
     val runtimeInput: Any?,
     val presentation: Any?,
     val hardcoreAllowed: Boolean,
+    val capabilities: Set<RuntimeCapability>,
 )
-
-internal data class EffectiveEnhancedLaunchPolicy(
-    val activeIds: Set<String>,
-    val hardcoreAllowed: Boolean,
-) {
-    val cheatsAllowed: Boolean get() = !hardcoreAllowed
-    val saveStatesAllowed: Boolean get() = !hardcoreAllowed
-    val retroAchievementsAllowed: Boolean get() = true
-}
-
-internal fun <T> EnhancedOrchestrationResult<T>.effectivePolicy() =
-    EffectiveEnhancedLaunchPolicy(activeIds, hardcoreAllowed)
 
 /**
  * Pure ordering seam for the enhanced launch contract.
@@ -51,17 +41,17 @@ internal fun <T> EnhancedOrchestrationResult<T>.effectivePolicy() =
 internal suspend fun <T> orchestrateEnhancedLaunch(
     addOnIds: List<String>,
     loadRomPaused: suspend () -> Unit,
-    reportCapabilities: () -> Unit,
-    prepare: (String) -> Boolean,
+    reportCapabilities: () -> Set<RuntimeCapability>,
+    prepare: (String, Set<RuntimeCapability>) -> Boolean,
     activate: (List<String>) -> Set<String>,
     compose: (Set<String>) -> T,
-    expose: (Set<String>) -> Pair<Any?, Any?>,
+    expose: (Set<String>, Set<RuntimeCapability>) -> Pair<Any?, Any?>,
     hardcoreAllowed: (Set<String>) -> Boolean,
 ): EnhancedOrchestrationResult<T> {
     require(addOnIds.isNotEmpty()) { "Enhanced orchestration requires at least one add-on" }
     loadRomPaused()
-    reportCapabilities()
-    val prepared = addOnIds.filter(prepare)
+    val capabilities = reportCapabilities()
+    val prepared = addOnIds.filter { prepare(it, capabilities) }
     if (prepared.size != addOnIds.size) {
         return EnhancedOrchestrationResult(
             activeIds = emptySet(),
@@ -69,6 +59,7 @@ internal suspend fun <T> orchestrateEnhancedLaunch(
             runtimeInput = null,
             presentation = null,
             hardcoreAllowed = false,
+            capabilities = capabilities,
         )
     }
     val active = activate(prepared)
@@ -79,15 +70,17 @@ internal suspend fun <T> orchestrateEnhancedLaunch(
             runtimeInput = null,
             presentation = null,
             hardcoreAllowed = false,
+            capabilities = capabilities,
         )
     }
     val composed = compose(active)
-    val (runtimeInput, presentation) = expose(active)
+    val (runtimeInput, presentation) = expose(active, capabilities)
     return EnhancedOrchestrationResult(
         activeIds = active,
         composed = composed,
         runtimeInput = runtimeInput,
         presentation = presentation,
         hardcoreAllowed = hardcoreAllowed(active),
+        capabilities = capabilities,
     )
 }

@@ -163,6 +163,7 @@ import kotlin.math.max
 class EmulatorActivity : AppCompatActivity() {
     companion object {
         const val KEY_ROM = "rom"
+        const val KEY_ENHANCEMENT_OVERRIDE = "enhancement_override"
         const val KEY_PATH = "PATH"
         const val KEY_URI = "uri"
         const val KEY_BOOT_FIRMWARE_CONSOLE = "boot_firmware_console"
@@ -179,9 +180,10 @@ class EmulatorActivity : AppCompatActivity() {
         private const val SHADER_PREWARM_MESSAGE_SETTLE_MS = 150L
         private const val LEDGER_EXPIRATION_DAY_MS = 24L * 60L * 60L * 1000L
 
-        fun getRomEmulatorActivityIntent(context: Context, rom: Rom): Intent {
+        fun getRomEmulatorActivityIntent(context: Context, rom: Rom, enhancementOverride: Set<String>? = null): Intent {
             return Intent(context, EmulatorActivity::class.java).apply {
                 putExtra(KEY_ROM, RomParcelable(rom))
+                enhancementOverride?.let { putExtra(KEY_ENHANCEMENT_OVERRIDE, it.toTypedArray()) }
             }
         }
 

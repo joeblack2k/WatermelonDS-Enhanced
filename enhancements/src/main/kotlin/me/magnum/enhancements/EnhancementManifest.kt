@@ -25,6 +25,8 @@ data class EnhancementManifest(
     val runtimeInvertY: Boolean = false,
     val runtimeDeadzone: Float = 0.12f,
     val runtimeSensitivity: Float = 1f,
+    val runtimeLifecycle: Set<EnhancementLifecycleEvent> = emptySet(),
+    val recenter: EnhancementRecenter? = null,
     val requiresCapabilities: Set<EnhancementCapability> = emptySet(),
     val conflictsWith: Set<String> = emptySet(),
     val hardcoreCompatible: Boolean = false,
@@ -122,6 +124,24 @@ enum class EnhancementPatchApply {
     RUNTIME,
     TEMPORARY_COPY,
 }
+
+@Serializable
+enum class EnhancementLifecycleEvent {
+    PAUSE,
+    RESET,
+    SAVE_STATE_LOAD,
+    CONTROLLER_DISCONNECT,
+    ACTIVITY_REPLACEMENT,
+    EMULATOR_STOP,
+    SESSION_TEARDOWN,
+}
+
+@Serializable
+data class EnhancementRecenter(
+    val input: String,
+    val edgeTriggered: Boolean,
+    val protocolField: String,
+)
 
 object EnhancementManifestParser {
     private val json = Json { ignoreUnknownKeys = false }
@@ -234,6 +254,17 @@ object EnhancementManifestParser {
             }
             require(manifest.runtimeDeadzone in 0f..1f) { "Invalid runtime deadzone" }
             require(manifest.runtimeSensitivity > 0f) { "Invalid runtime sensitivity" }
+            if (manifest.runtimeLifecycle.isNotEmpty()) {
+                require(manifest.runtimeLifecycle.containsAll(EnhancementLifecycleEvent.entries)) {
+                    "Declared runtime lifecycle must cover every neutralization event"
+                }
+            }
+            manifest.recenter?.let {
+                require(it.edgeTriggered) { "Recenter must be edge-triggered" }
+                require(it.input.isNotBlank() && it.protocolField.isNotBlank()) {
+                    "Recenter metadata needs an input and protocol field"
+                }
+            }
         }
         require(manifest.conflictsWith.none { it == manifest.id }) {
             "Enhancement cannot conflict with itself"

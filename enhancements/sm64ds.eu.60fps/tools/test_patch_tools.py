@@ -62,7 +62,7 @@ class PatchToolsTest(unittest.TestCase):
         patch_path = HERE.parent / "patches" / "60fps-v10.ards"
         verify.verify_manifest_contract(manifest_path, patch_path)
         self.assertEqual(manifest["status"], "SOURCE_ONLY")
-        self.assertEqual(manifest["capabilities"], [])
+        self.assertEqual(manifest["capabilities"], ["RUNTIME_CODE_PATCH"])
         self.assertEqual(len(manifest["patches"][0]["expectedOriginalWords"]), 8)
         self.assertEqual(
             {key for key, value in manifest["verification"].items() if value == "VERIFIED"},

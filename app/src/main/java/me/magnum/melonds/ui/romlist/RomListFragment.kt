@@ -96,6 +96,11 @@ class RomListFragment : Fragment() {
                         .collectAsState(initial = RomScanningStatus.NOT_SCANNING)
                     val confirmedAchievementHashes by romListViewModel.confirmedAchievementHashes.collectAsState()
                     val raCoverByHash by romListViewModel.raCoverByHash.collectAsState()
+                    val enhancedRomUris = romListViewModel.enhancementAvailability
+                        .collectAsState()
+                        .value
+                        .filterValues { it.availableIds.isNotEmpty() }
+                        .keys
                     val boxArtByUri by romListViewModel.boxArtByUri.collectAsState()
                     var contextRomUri by remember { mutableStateOf<String?>(null) }
                     var searchQuery by remember { mutableStateOf("") }
@@ -117,9 +122,9 @@ class RomListFragment : Fragment() {
                         allowConfiguration = allowRomConfiguration,
                         scanningStatus = scanningStatus,
                         confirmedAchievementHashes = confirmedAchievementHashes,
+                        enhancedRomUris = enhancedRomUris,
                         onFolderClick = { folder -> romListViewModel.openFolder(folder.docId) },
                         onRomClick = { rom ->
-                            romListViewModel.setRomLastPlayedNow(rom)
                             romSelectedListener?.invoke(rom)
                         },
                         onRomLongPress = { rom -> contextRomUri = rom.uri.toString() },

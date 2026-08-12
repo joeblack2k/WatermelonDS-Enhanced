@@ -154,6 +154,7 @@ object MelonEmulator {
     external fun resetEmulation()
 
 	external fun stopEmulation()
+	external fun clearTransientInputState()
 
     fun saveState(path: Uri): Boolean {
         return saveStateInternal(path.toString())
