@@ -12,6 +12,11 @@ import me.magnum.melonds.domain.model.retroachievements.RAEvent
 import me.magnum.melonds.domain.model.retroachievements.RaNativePendingRetryResult
 import me.magnum.melonds.domain.model.retroachievements.RARuntimeBridgeConfig
 import me.magnum.melonds.domain.model.rom.Rom
+import me.magnum.enhancements.EnhancementRuntimeGuard
+import me.magnum.enhancements.EnhancementOverlayWord
+import me.magnum.enhancements.EnhancementActivationRequest
+import me.magnum.enhancements.EnhancementActivationResult
+import me.magnum.enhancements.RuntimeCapability
 import me.magnum.melonds.ui.emulator.rewind.model.RewindSaveState
 import me.magnum.melonds.ui.emulator.rewind.model.RewindWindow
 
@@ -20,6 +25,10 @@ interface EmulatorManager {
     val emulatorEvents: Flow<EmulatorEvent>
 
     suspend fun loadRom(rom: Rom, cheats: List<Cheat>): RomLaunchResult
+    fun setEnhancedRuntimeGuards(guards: List<EnhancementRuntimeGuard>)
+    fun setEnhancedRuntimeOverlay(words: List<EnhancementOverlayWord>)
+    fun activateEnhancedAddOns(requests: List<EnhancementActivationRequest>): EnhancementActivationResult
+    fun enhancedRuntimeCapabilities(): Set<RuntimeCapability>
 
     suspend fun loadFirmware(consoleType: ConsoleType): FirmwareLaunchResult
 
@@ -60,6 +69,7 @@ interface EmulatorManager {
     suspend fun takeScreenshot(): Boolean
 
     fun stopEmulator()
+    fun clearTransientInputState()
 
     fun cleanEmulator()
 

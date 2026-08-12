@@ -51,6 +51,15 @@ class EmulatorSession {
         return updateActions
     }
 
+    fun applyRetroAchievementsLaunchPolicy(
+        areRetroAchievementsEnabled: Boolean,
+        isHardcoreModeEnabled: Boolean,
+    ) {
+        this.areRetroAchievementsEnabled = areRetroAchievementsEnabled
+        this.isRetroAchievementsHardcoreModeEnabled =
+            areRetroAchievementsEnabled && isHardcoreModeEnabled
+    }
+
     fun updateRetroAchievementsIntegrationStatus(integrationStatus: GameAchievementData.IntegrationStatus) {
         sessionHasAchievements = integrationStatus == GameAchievementData.IntegrationStatus.ENABLED_FULL
         if (!sessionHasAchievements) {

@@ -154,6 +154,7 @@ object MelonEmulator {
     external fun resetEmulation()
 
 	external fun stopEmulation()
+	external fun clearTransientInputState()
 
     fun saveState(path: Uri): Boolean {
         return saveStateInternal(path.toString())
@@ -188,6 +189,19 @@ object MelonEmulator {
     private external fun onKeyRelease(key: Int)
 
     external fun setSlot2AnalogInput(x: Float, y: Float)
+    external fun setRuntimeTransientInputFrame(
+        axisXQ12: Short,
+        axisYQ12: Short,
+        scalar: Short,
+        actionSequence: Short,
+        flags: Short,
+    )
+    external fun validateEnhancedRuntimeGuard(address: Int, expectedWord: Int): Boolean
+    external fun applyEnhancedRuntimeOverlay(
+        addresses: IntArray,
+        expectedWords: IntArray,
+        values: IntArray,
+    ): Boolean
 
     external fun takeScreenshot(): Boolean
 

@@ -53,6 +53,7 @@ import me.magnum.melonds.ui.romdetails.model.RomConfigUiState
 import me.magnum.melonds.ui.romdetails.model.RomConfigUpdateEvent
 import me.magnum.melonds.ui.romdetails.model.RomGbaSlotConfigUiModel
 import me.magnum.melonds.ui.theme.MelonTheme
+import me.magnum.enhancements.isInstallable
 import java.util.Date
 import java.util.UUID
 
@@ -444,6 +445,28 @@ private fun Content(
                     )
                 },
             )
+        }
+
+        if (romConfig.availableEnhancements.isNotEmpty()) {
+            ConfigSection(title = stringResource(R.string.enhanced_addons)) {
+                romConfig.availableEnhancements.forEachIndexed { index, manifest ->
+                    ConfigToggleRow(
+                        title = "${manifest.name} ${manifest.version}",
+                        subtitle = manifest.distributionStatus?.name ?: manifest.status?.name,
+                        isOn = manifest.id in romConfig.enabledEnhancements,
+                        enabled = manifest.isInstallable(),
+                        showDivider = index > 0,
+                        onToggle = { enabled ->
+                            onConfigUpdate(
+                                RomConfigUpdateEvent.EnhancedAddonsUpdate(
+                                    if (enabled) romConfig.enabledEnhancements + manifest.id
+                                    else romConfig.enabledEnhancements - manifest.id,
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
         }
 
         ConfigSection(title = stringResource(R.string.controller_layout)) {

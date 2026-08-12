@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -37,6 +38,8 @@ import me.magnum.melonds.domain.repositories.RomsRepository
 import me.magnum.melonds.domain.repositories.SettingsRepository
 import me.magnum.melonds.domain.services.DSiNandManager
 import me.magnum.melonds.impl.RomIconProvider
+import me.magnum.melonds.impl.EnhancementCatalogLoader
+import me.magnum.melonds.impl.EnhancementRomIdentityResolver
 import me.magnum.melonds.utils.EventSharedFlow
 import me.magnum.melonds.utils.SubjectSharedFlow
 import me.magnum.melonds.ui.romlist.RomBrowserEntry
@@ -55,6 +58,8 @@ class RomListViewModel @Inject constructor(
     private val dsiNandManager: DSiNandManager,
     retroAchievementsRepository: RetroAchievementsRepository,
     private val boxArtRepository: me.magnum.melonds.ui.romlist.boxart.BoxArtRepository,
+    private val enhancementCatalogLoader: EnhancementCatalogLoader,
+    private val enhancementRomIdentityResolver: EnhancementRomIdentityResolver,
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -130,12 +135,41 @@ class RomListViewModel @Inject constructor(
         )
     )
     val browserState = _browserState.asStateFlow()
+    private val enhancementRefreshTrigger = MutableStateFlow(0)
+
+    fun refreshEnhancementAvailability() {
+        enhancementRefreshTrigger.value++
+    }
+    private val _enhancementAvailability = MutableStateFlow<Map<String, EnhancementRomAvailability>>(emptyMap())
+    val enhancementAvailability: StateFlow<Map<String, EnhancementRomAvailability>> = _enhancementAvailability.asStateFlow()
     private val _directoryStatusUi = MutableStateFlow<List<DirectoryCacheStatusUi>>(emptyList())
     val directoryStatusUi = _directoryStatusUi.asStateFlow()
     private val reportedUnavailableDirectories = mutableSetOf<String>()
 
     init {
         refreshInstalledDsiWareShortcuts()
+
+        viewModelScope.launch {
+            combine(browserState, enhancementRefreshTrigger) { state, _ -> state }
+                .collectLatest { state ->
+                _enhancementAvailability.value = withContext(Dispatchers.IO) {
+                    val catalog = runCatching { enhancementCatalogLoader.load() }.getOrNull()
+                    if (catalog == null) {
+                        emptyMap()
+                    } else {
+                        (state.entries.mapNotNull { (it as? RomBrowserEntry.RomItem)?.rom } +
+                            state.continuePlaying)
+                            .distinctBy { it.uri.toString() }
+                            .associate { rom ->
+                                val identity = runCatching {
+                                    enhancementRomIdentityResolver.resolve(rom, catalog)
+                                }.getOrNull()
+                                rom.uri.toString() to resolveEnhancementAvailability(catalog, identity)
+                            }
+                    }
+                }
+            }
+        }
 
         viewModelScope.launch {
             settingsRepository.observeRomSearchDirectories()

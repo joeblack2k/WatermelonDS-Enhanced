@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 3,
+  "id": "sm64ds.eu.widescreen",
+  "name": "SM64DS EU widescreen",
+  "version": "1.0.0",
+  "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
+  "match": {
+    "gameCode": "ASMP",
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
+  },
+  "capabilities": ["LAYER_AWARE_PRESENTATION", "RUNTIME_CODE_PATCH"],
+  "patches": [
+    {
+      "type": "ACTION_REPLAY",
+      "file": "patches/widescreen.ards",
+      "apply": "RUNTIME",
+      "provenance": "SM64DS EU revision-0 aspect payload; four original-word guards are recorded in README.md",
+      "expectedOriginalWords": {
+        "0x0200D03C": "0x00001555",
+        "0x0200F64C": "0x00001555",
+        "0x02015774": "0x00001555",
+        "0x020C025C": "0x00001555"
+      },
+      "sha256": "28445a89a887a556b4a0564e21f8ca579eeab437471bff1b38c681efd6a3bbc6"
+    }
+  ],
+  "conflictsWith": ["sm64ds.eu.60fps"],
+  "hardcoreCompatible": false,
+  "verification": {
+    "gameplayBehavior": "UNVERIFIED",
+    "presentation": "UNVERIFIED",
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
+  }
+}

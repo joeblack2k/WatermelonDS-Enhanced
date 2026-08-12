@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 3,
+  "id": "sm64ds.eu.60fps",
+  "name": "SM64DS EU 60 FPS",
+  "version": "0.1.0",
+  "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
+  "match": {
+    "gameCode": "ASMP",
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
+  },
+  "capabilities": ["RUNTIME_CODE_PATCH"],
+  "patches": [],
+  "conflictsWith": ["sm64ds.eu.widescreen"],
+  "hardcoreCompatible": false,
+  "verification": {
+    "cadence": "UNVERIFIED",
+    "gameplayPhysics": "UNVERIFIED",
+    "timers": "UNVERIFIED",
+    "animation": "UNVERIFIED",
+    "particles": "UNVERIFIED",
+    "audio": "UNVERIFIED",
+    "saveState": "UNVERIFIED",
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
+  }
+}

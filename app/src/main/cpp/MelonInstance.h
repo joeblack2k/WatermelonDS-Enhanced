@@ -50,12 +50,20 @@ public:
     void reset();
     melonDS::u32 runFrame();
     void stop();
+    void clearTransientInputState();
 
     void touchScreen(u16 x, u16 y);
     void releaseScreen();
     void pressKey(u32 key);
     void releaseKey(u32 key);
     void setSlot2AnalogInput(float x, float y);
+    void setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+        u16 actionSequence, u16 flags);
+    bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const;
+    bool applyEnhancedRuntimeOverlay(
+        const std::vector<u32>& addresses,
+        const std::vector<u32>& expectedWords,
+        const std::vector<u32>& values);
     int readAudioOutput(s16* buffer, int length);
     void setAudioOutputSkew(double skew);
     bool takeScreenshot();
@@ -324,6 +332,11 @@ private:
     u32 inputMask;
     std::atomic<float> slot2AnalogX = 0.0f;
     std::atomic<float> slot2AnalogY = 0.0f;
+    std::atomic<s16> runtimeFrameAxisXQ12 = 0;
+    std::atomic<s16> runtimeFrameAxisYQ12 = 0;
+    std::atomic<u16> runtimeFrameScalar = 0;
+    std::atomic<u16> runtimeFrameActionSequence = 0;
+    std::atomic<u16> runtimeFrameFlags = 0;
 
     const VulkanSessionProfile vulkanSessionProfile;
     std::shared_ptr<EmulatorConfiguration> currentConfiguration;

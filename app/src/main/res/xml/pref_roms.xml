@@ -48,6 +48,12 @@
             android:max="6" />
 
     <Preference
+            android:key="enhancement_import"
+            android:title="@string/import_enhancement"
+            android:summary="@string/import_enhancement_summary"
+            app:iconSpaceReserved="false" />
+
+    <Preference
             android:key="rom_cache_clear"
             android:title="@string/clear_extracted_rom_cache"
             android:summary="@string/cache_size_calculating"

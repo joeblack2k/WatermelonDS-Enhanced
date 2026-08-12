@@ -83,6 +83,7 @@ fun RomBrowserScreen(
     allowConfiguration: Boolean,
     scanningStatus: RomScanningStatus,
     confirmedAchievementHashes: Set<String>,
+    enhancedRomUris: Set<String> = emptySet(),
     onFolderClick: (RomBrowserEntry.Folder) -> Unit,
     onRomClick: (Rom) -> Unit,
     onRomLongPress: (Rom) -> Unit,
@@ -241,6 +242,7 @@ fun RomBrowserScreen(
                                     onFolderClick = onFolderClick,
                                     onRomClick = onRomClick,
                                     onRomLongPress = onRomLongPress,
+                                    enhancedRomUris = enhancedRomUris,
                                     onFilterSelected = onFilterSelected,
                                     onSortSelected = onSortSelected,
                                     onNavigateUp = onNavigateUp,
@@ -265,6 +267,7 @@ fun RomBrowserScreen(
                                     onFolderClick = onFolderClick,
                                     onRomClick = onRomClick,
                                     onRomLongPress = onRomLongPress,
+                                    enhancedRomUris = enhancedRomUris,
                                     onRomConfigClick = onRomConfigClick,
                                     onFilterSelected = onFilterSelected,
                                     onSortSelected = onSortSelected,
@@ -373,6 +376,7 @@ private fun GridContent(
     onFolderClick: (RomBrowserEntry.Folder) -> Unit,
     onRomClick: (Rom) -> Unit,
     onRomLongPress: (Rom) -> Unit,
+    enhancedRomUris: Set<String>,
     onFilterSelected: (RomFilter) -> Unit,
     onSortSelected: (SortingMode) -> Unit,
     onNavigateUp: () -> Unit,
@@ -472,6 +476,7 @@ private fun GridContent(
                     boxArtUrl = boxArtByUri[entry.rom.uri.toString()]?.takeIf { it.isNotEmpty() },
                     boxArtLoading = boxArtByUri[entry.rom.uri.toString()] == null,
                     showAchievementBadge = entry.rom.retroAchievementsHash in confirmedAchievementHashes,
+                        isEnhanced = entry.rom.uri.toString() in enhancedRomUris,
                     onClick = { onRomClick(entry.rom) },
                     onLongPress = {
                         if (!entry.rom.isInstalledDsiWareShortcut) {
@@ -511,6 +516,7 @@ private fun ListContent(
     onFolderClick: (RomBrowserEntry.Folder) -> Unit,
     onRomClick: (Rom) -> Unit,
     onRomLongPress: (Rom) -> Unit,
+    enhancedRomUris: Set<String>,
     onRomConfigClick: (Rom) -> Unit,
     onFilterSelected: (RomFilter) -> Unit,
     onSortSelected: (SortingMode) -> Unit,
@@ -597,6 +603,7 @@ private fun ListContent(
                             boxArtLoading = boxArtByUri[entry.rom.uri.toString()] == null,
                             allowConfiguration = allowConfiguration && !entry.rom.isInstalledDsiWareShortcut,
                             showAchievementBadge = entry.rom.retroAchievementsHash in confirmedAchievementHashes,
+                        isEnhanced = entry.rom.uri.toString() in enhancedRomUris,
                             onClick = { onRomClick(entry.rom) },
                             onLongPress = {
                                 if (!entry.rom.isInstalledDsiWareShortcut) {

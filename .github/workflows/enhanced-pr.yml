@@ -1,0 +1,208 @@
+name: Enhanced PR
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Verify exact PR head
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Check submodules
+        run: git submodule status --recursive
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Warm Gradle wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            if ./gradlew --version --no-daemon; then
+              exit 0
+            fi
+            echo "Gradle wrapper download failed (attempt ${attempt}/5); retrying..."
+            sleep 10
+          done
+          exit 1
+
+      - name: Check diff
+        run: |
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base_sha" ]; then
+            git fetch --no-tags origin Fet_OfflineChevos
+            base_sha="$(git merge-base HEAD origin/Fet_OfflineChevos)"
+          fi
+          git diff --check "$base_sha"...HEAD
+
+      - name: Test ROM identity
+        run: python3 -B enhancements/tools/test_rom_identity.py
+
+      - name: Test widescreen manifest and payload
+        run: python3 -B enhancements/sm64ds.eu.widescreen/tools/test_manifest.py
+
+      - name: Test camera patch tools
+        run: python3 -B enhancements/sm64ds.eu.right-stick-camera/tools/test_patch_tools.py
+
+      - name: Test 60fps patch tools
+        run: python3 -B enhancements/sm64ds.eu.60fps/tools/test_patch_tools.py
+
+      - name: Test widescreen tools
+        run: python3 -B enhancements/sm64ds.eu.widescreen/tools/test_widescreen_tools.py
+
+      - name: Run tests
+        run: ./gradlew :enhancements:test :app:testGitHubProdReleaseUnitTest --no-daemon
+
+      - name: Build production debug native code
+        run: ./gradlew :app:externalNativeBuildGitHubProdDebug --no-daemon
+
+      - name: Assemble debug APK
+        env:
+          MELONDS_ACCEPTANCE_BUILD: true
+        run: ./gradlew :app:assembleGitHubProdDebug --no-daemon
+
+      - name: Verify bundled enhancement assets in APK
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          apks = list(pathlib.Path("app/build/outputs/apk").rglob("app-gitHubProd-debug.apk"))
+          assert len(apks) == 1, f"expected one debug APK, found {len(apks)}"
+          expected = {
+              "assets/enhancements/sm64ds.eu.60fps/manifest.json",
+              "assets/enhancements/sm64ds.eu.right-stick-camera/manifest.json",
+              "assets/enhancements/sm64ds.eu.widescreen/manifest.json",
+          }
+          with zipfile.ZipFile(apks[0]) as apk:
+              entries = set(apk.namelist())
+          enhancement_entries = {
+              entry for entry in entries if entry.startswith("assets/enhancements/")
+          }
+          assert enhancement_entries == expected, (
+              f"unexpected enhancement APK entries: "
+              f"{sorted(enhancement_entries ^ expected)}"
+          )
+          print(f"verified {apks[0]}: {sorted(enhancement_entries)}")
+          PY
+
+      - name: Verify APK provenance
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          metadata="$(find app/build/outputs/apk -name output-metadata.json -type f -print -quit)"
+          test -n "$metadata"
+          apk="$(python3 - "$metadata" <<'PY'
+          import json
+          import pathlib
+          import sys
+          data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          outputs = data.get("elements", [])
+          assert len(outputs) == 1, f"expected one APK output, found {len(outputs)}"
+          print(pathlib.Path(sys.argv[1]).parent / outputs[0]["outputFile"])
+          PY
+          )"
+          test -f "$apk"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          python3 - "$apk" "$EXPECTED_SHA" <<'PY'
+          import hashlib
+          import pathlib
+          import subprocess
+          import sys
+          import xml.etree.ElementTree as ET
+
+          apk = pathlib.Path(sys.argv[1])
+          expected = sys.argv[2]
+          ns = "{http://schemas.android.com/apk/res/android}"
+          manifest = subprocess.check_output(["apkanalyzer", "manifest", "print", str(apk)], text=True)
+          root = ET.fromstring(manifest)
+          application = root.find("application")
+          metadata = {
+              item.attrib[f"{ns}name"]: item.attrib.get(f"{ns}value", "")
+              for item in application.findall("meta-data")
+          }
+          assert metadata["me.magnum.melonds.SOURCE_REVISION"] == expected
+          sha256 = hashlib.sha256(apk.read_bytes()).hexdigest()
+          submodules = subprocess.check_output(
+              ["git", "submodule", "status", "--recursive"], text=True
+          ).strip()
+          status = subprocess.check_output(
+              ["git", "status", "--porcelain", "--untracked-files=all"], text=True
+          ).strip() or "clean"
+          lines = [
+              f"source_sha={expected}",
+              f"source_clean={status == 'clean'}",
+              f"apk_sha256={sha256}",
+              f"apk_size_bytes={apk.stat().st_size}",
+              f"application_id={root.attrib['package']}",
+              f"version={root.attrib.get(f'{ns}versionName', '')}",
+              f"versionCode={root.attrib.get(f'{ns}versionCode', '')}",
+              "submodules_recursive_status:",
+              submodules or "(none)",
+          ]
+          pathlib.Path("enhanced-pr-apk.provenance.txt").write_text("\n".join(lines) + "\n")
+          PY
+
+      - name: Upload APK and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: enhanced-pr-apk-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            app/build/outputs/apk/gitHubProd/debug/app-gitHubProd-debug.apk
+            enhanced-pr-apk.provenance.txt
+          if-no-files-found: error
+
+      - name: Record production debug lint evidence
+        id: lint
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          ./gradlew lintGitHubProdDebug --no-daemon
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "### Lint evidence" >> "$GITHUB_STEP_SUMMARY"
+            echo "lintGitHubProdDebug succeeded." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Lint evidence" >> "$GITHUB_STEP_SUMMARY"
+            echo "lintGitHubProdDebug failed (exit $status); reports will be uploaded if generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
+
+      - name: Upload production debug lint reports
+        if: steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-prod-debug-lint-reports
+          path: |
+            app/build/reports/lint-results/
+            app/build/reports/lint-results-*.xml
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.txt
+          if-no-files-found: warn

@@ -11,6 +11,7 @@ import me.magnum.melonds.domain.model.rom.config.RomGbaSlotConfig
 import me.magnum.melonds.domain.repositories.LayoutsRepository
 import me.magnum.melonds.ui.romdetails.model.RomConfigUiModel
 import me.magnum.melonds.ui.romdetails.model.RomGbaSlotConfigUiModel
+import me.magnum.enhancements.EnhancementManifest
 
 class RomDetailsUiMapper(
     private val context: Context,
@@ -29,6 +30,7 @@ class RomDetailsUiMapper(
         globalRetroArchShaderParameters: String?,
         hasValidRetroArchShaderRoot: Boolean,
         globalRetroAchievementsEnabled: Boolean,
+        availableEnhancements: List<EnhancementManifest>,
     ): RomConfigUiModel {
         return RomConfigUiModel(
             runtimeConsoleType = romConfig.runtimeConsoleType,
@@ -57,6 +59,8 @@ class RomDetailsUiMapper(
             hasValidRetroArchShaderRoot = hasValidRetroArchShaderRoot,
             retroAchievementsEnabled = romConfig.retroAchievementsEnabled,
             globalRetroAchievementsEnabled = globalRetroAchievementsEnabled,
+            availableEnhancements = availableEnhancements,
+            enabledEnhancements = romConfig.enabledEnhancements,
         )
     }
 

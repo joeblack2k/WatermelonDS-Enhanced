@@ -193,6 +193,7 @@ add_library(
         "${ANDROID_CPP_DIR}/RetroAchievementsMapper.cpp"
         "${ANDROID_CPP_DIR}/RewindManager.cpp"
         "${ANDROID_CPP_DIR}/RomIconBuilder.cpp"
+        "${ANDROID_CPP_DIR}/RuntimeTransientInputAdapter.cpp"
         "${ANDROID_CPP_DIR}/SDCardArgsBuilder.cpp"
         "${ANDROID_CPP_DIR}/SaveManager.cpp"
         "${ANDROID_CPP_DIR}/UriFileHandler.cpp"

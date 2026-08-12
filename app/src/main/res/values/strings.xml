@@ -288,6 +288,13 @@
     <string name="rom_last_played_format">Last played %1$s</string>
     <string name="max_rom_cache_size">Max. ROM cache size</string>
     <string name="clear_extracted_rom_cache">Clear extracted ROM cache</string>
+    <string name="import_enhancement" tools:ignore="MissingTranslation">Import enhancement ZIP</string>
+    <string name="import_enhancement_summary" tools:ignore="MissingTranslation">Install an app-managed enhancement package</string>
+    <string name="replace_enhancement_title" tools:ignore="MissingTranslation">Replace installed enhancement?</string>
+    <string name="replace_enhancement_message" tools:ignore="MissingTranslation">%1$s %2$s is already installed. Replace it?</string>
+    <string name="replace_enhancement" tools:ignore="MissingTranslation">Replace</string>
+    <string name="enhancement_import_success" tools:ignore="MissingTranslation">Imported %1$s, version %2$s, distribution %3$s. Verification: %4$s. Catalog refreshed (%5$d packages).</string>
+    <string name="enhancement_import_failed" tools:ignore="MissingTranslation">Enhancement import failed: %1$s</string>
     <string name="cache_size">Cache size: %s</string>
     <string name="cache_size_calculating">Cache size: calculating…</string>
     <string name="rom_search_directory">Search directory</string>
@@ -420,6 +427,7 @@
     <string name="audio_latency">Audio latency</string>
     <string name="microphone_source">Microphone source</string>
     <string name="controller_layout">Layouts</string>
+    <string name="enhanced_addons">Enhanced add-ons</string>
     <string name="category_save_files">Save Files</string>
     <string name="category_save_files_summary">Save file &amp; save state locations</string>
     <string name="save_next_rom">Save next to ROM file</string>
@@ -1096,4 +1104,9 @@
         <item>Fit bottom</item>
         <item>Fit right</item>
     </string-array>
+    <string name="play_normal">Normal mode</string>
+    <string name="enhanced_launch_title">Play mode</string>
+    <string name="enhanced_launch_message">Choose how to launch this ROM.</string>
+    <string name="play_enhanced">Enhanced</string>
+    <string name="play_original">Normal</string>
 </resources>

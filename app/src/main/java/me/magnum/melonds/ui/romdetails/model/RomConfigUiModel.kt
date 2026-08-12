@@ -8,6 +8,7 @@ import me.magnum.melonds.domain.model.rom.config.RomInputMode
 import me.magnum.melonds.domain.model.rom.config.RuntimeConsoleType
 import me.magnum.melonds.domain.model.rom.config.RuntimeMicSource
 import java.util.UUID
+import me.magnum.enhancements.EnhancementManifest
 
 data class RomConfigUiModel(
     val runtimeConsoleType: RuntimeConsoleType = RuntimeConsoleType.DEFAULT,
@@ -36,4 +37,6 @@ data class RomConfigUiModel(
     val hasValidRetroArchShaderRoot: Boolean = false,
     val retroAchievementsEnabled: Boolean? = null,
     val globalRetroAchievementsEnabled: Boolean = true,
+    val availableEnhancements: List<EnhancementManifest> = emptyList(),
+    val enabledEnhancements: Set<String> = emptySet(),
 )

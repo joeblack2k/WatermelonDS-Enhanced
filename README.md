@@ -7,7 +7,7 @@ renderer, RetroArch shader presets and full external display support, wrapped in
 
 
 
-[<img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80">](https://github.com/SapphireRhodonite/melonDS-android/releases/latest)
+[<img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="80">](https://github.com/SapphireRhodonite/WatermelonDS/releases/latest)
 
 <p align="center">
    <img width="450" height="400" alt="WaterMelon1" src="https://github.com/user-attachments/assets/187ea254-877e-4efd-a8dd-93a6023684ad" />
@@ -46,6 +46,46 @@ Everything from the upstream Android port, plus:
 
 The core is kept in sync with melonDS 1.0 and later upstream changes.
 
+# Fork maintenance
+
+The maintained fork is `joeblack2k/WatermelonDS-Enhanced`. Its configured
+upstream is `SapphireRhodonite/WatermelonDS`; the fork's base is commit
+`1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) and the
+the published branch `codex/watermelon-enhanced-pr`; the live PR head is
+authoritative via GitHub. The code-bearing parent is historical commit
+`34ea454454bcf62c31f83b451078791153cec646`. The `melonDS-android-lib`
+submodule is sourced from
+`joeblack2k/melonDS-android-lib` on the public branch
+`codex/slot2-camera-contract`, which exposes the baseline gitlink
+`e4022d7e7ada535ff5ea9d087db389cc46e8da62`. The former submodule repository
+name is stale and is not used.
+
+The current PR is PR #1, open and draft, with base
+`Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9` and head
+`codex/watermelon-enhanced-pr`; its live head is authoritative via GitHub.
+
+M3 evidence is recorded in [`docs/ENHANCED_ACCEPTANCE.md`](docs/ENHANCED_ACCEPTANCE.md).
+The repository build and baseline debug launch are evidenced, but distribution
+and enhancement runtime acceptance remain blocked. The camera and 60 FPS
+add-ons remain `SOURCE_ONLY`; licensing, ROM inputs, RetroAchievements,
+gameplay, and physical enhancement/ROM launch, controls, and gameplay gates
+remain open. Any black screenshot is non-UI evidence only.
+The current lint rerun on `2026-08-12 12:38:21 +0200` failed with 635 errors,
+574 warnings, and 1 hint. This is a checkout-wide candidate snapshot, not a
+base comparison; the counts are not being classified against the earlier
+630/573 result. The seven enhancement `MissingTranslation`
+annotations leave zero enhancement-owned `MissingTranslation` findings. One
+enhancement-owned `PluralsCandidate` warning remains for
+`enhancement_import_success`; `strings.xml` is part of this documentation
+batch. These counts are checkout-wide and do not classify every finding as
+baseline. The external log SHA-256 is
+`11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
+The candidate APK SHA-256 is
+`37b32ac828008e0c4fcc7b411f5fe06f8a268ec78ac4ff4cefa78155091e740c`.
+
+For the bounded update procedure and the exact reference model, see
+[`docs/FORK_MAINTENANCE.md`](docs/FORK_MAINTENANCE.md).
+
 # Missing Features
 *  Local Multiplayer
 *  DSi SD card support
@@ -75,7 +115,7 @@ the save file directory is not set. Instead, WatermelonDS will create a save fil
 
 # Releases
 
-Builds are published [here](https://github.com/SapphireRhodonite/melonDS-android/releases). Release candidates are
+Builds are published [here](https://github.com/SapphireRhodonite/WatermelonDS/releases). Release candidates are
 marked as pre-releases; they can contain more bugs than usual and you may need to clear your app data to get them to
 work properly after an update.
 
@@ -86,7 +126,7 @@ To build the project you will need the Android SDK, NDK, CMake, a JDK 21 toolcha
 ## Build steps:
 1.  Clone the project, including submodules with:
     
-    `git clone --recurse-submodules https://github.com/SapphireRhodonite/melonDS-android.git`
+    `git clone --recurse-submodules https://github.com/SapphireRhodonite/WatermelonDS.git`
 2.  Install the Android SDK, NDK (`28.0.13004108`) and CMake
 3.  Install Rust with [rustup](https://rustup.rs/). If Android Studio does not inherit your shell `PATH`, set the
     `CARGO` and `RUSTUP` environment variables to the executable paths

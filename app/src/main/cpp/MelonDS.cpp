@@ -410,6 +410,8 @@ namespace MelonDSAndroid
     void ReplaceInstance(std::shared_ptr<MelonInstance> replacement)
     {
         std::lock_guard lock(instanceLifetimeMutex);
+        if (instance)
+            instance->clearTransientInputState();
         instance = std::move(replacement);
     }
 
@@ -723,6 +725,26 @@ namespace MelonDSAndroid
     {
         if (instance)
             instance->setSlot2AnalogInput(x, y);
+    }
+
+    void setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+        u16 actionSequence, u16 flags)
+    {
+        if (instance)
+            instance->setRuntimeTransientInputFrame(axisXQ12, axisYQ12, scalar, actionSequence, flags);
+    }
+
+    bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord)
+    {
+        return instance != nullptr && instance->validateEnhancedRuntimeGuard(address, expectedWord);
+    }
+
+    bool applyEnhancedRuntimeOverlay(
+        const std::vector<u32>& addresses,
+        const std::vector<u32>& expectedWords,
+        const std::vector<u32>& values)
+    {
+        return instance != nullptr && instance->applyEnhancedRuntimeOverlay(addresses, expectedWords, values);
     }
 
     void start()
@@ -1376,6 +1398,8 @@ namespace MelonDSAndroid
 
     void pause()
     {
+        if (instance)
+            instance->clearTransientInputState();
         pauseAudio();
     }
 
@@ -1569,6 +1593,12 @@ namespace MelonDSAndroid
 
         instance->stop();
         cleanupOpenGlContext();
+    }
+
+    void clearTransientInputState()
+    {
+        if (instance)
+            instance->clearTransientInputState();
     }
 
     void cleanup()

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 3,
+  "id": "sm64ds.eu.right-stick-camera",
+  "name": "SM64DS EU right-stick camera",
+  "version": "1.0.0",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
+  "author": "WatermelonDS Enhanced contributors",
+  "match": {
+    "gameCode": "ASMP",
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
+  },
+  "capabilities": [
+    "CONTROLLER_AXIS_OWNER",
+    "RUNTIME_INPUT_PROTOCOL",
+    "RUNTIME_CODE_PATCH",
+    "SLOT2_ANALOG"
+  ],
+  "runtimeCapability": {
+    "id": "transient-input",
+    "majorVersion": 1
+  },
+  "runtimeAxisXCode": 12,
+  "runtimeAxisYCode": 13,
+  "runtimeDeadzone": 0.12,
+  "runtimeSensitivity": 1.0,
+  "runtimeLifecycle": [
+    "PAUSE",
+    "RESET",
+    "SAVE_STATE_LOAD",
+    "CONTROLLER_DISCONNECT",
+    "ACTIVITY_REPLACEMENT",
+    "EMULATOR_STOP",
+    "SESSION_TEARDOWN"
+  ],
+  "recenter": {
+    "input": "R3",
+    "edgeTriggered": true,
+    "protocolField": "recenterSequence"
+  },
+  "patches": [
+    {
+      "type": "ACTION_REPLAY",
+      "file": "patches/slot2-analog.ards",
+      "apply": "RUNTIME",
+      "provenance": "AM64DS Europe by LRFLEW; source metadata and license notice in README.md",
+      "sha256": "e68025c3aad3a47941ab2903dd9d212b91bafedff705ea6252677c27d07bdb1c"
+    },
+    {
+      "type": "ACTION_REPLAY",
+      "file": "patches/camera.ards",
+      "apply": "RUNTIME",
+      "provenance": "ThorDS EU smooth orbit camera v1; exact ASMP revision-0 payload with five original-word guards",
+      "expectedOriginalWords": {
+        "0x02009E70": "0xE92D4FF0",
+        "0x0200A7A8": "0xE1C107BC",
+        "0x0200A790": "0x02880C01",
+        "0x0200A79C": "0x01D028F4",
+        "0x0200A7A4": "0x00811002"
+      },
+      "sha256": "b582a3372a0cf6c60c3c14da32dbc39d5e233c12f3d22efaa87b1abe25e63053"
+    }
+  ],
+  "verification": {
+    "inputTransport": "UNVERIFIED",
+    "gameplayBehavior": "UNVERIFIED",
+    "lifecycle": "UNVERIFIED",
+    "recenter": "UNVERIFIED",
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
+  },
+  "hardcoreCompatible": false
+}

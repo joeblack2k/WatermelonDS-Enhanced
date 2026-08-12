@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 3,
+  "id": "sm64ds.eu.widescreen",
+  "name": "SM64DS EU widescreen",
+  "version": "0.1.0",
+  "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
+  "match": {
+    "gameCode": "ASMP",
+    "revision": 0,
+    "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
+  },
+  "capabilities": [
+    "NATIVE_EMULATOR_CAPABILITY",
+    "LAYER_AWARE_PRESENTATION",
+    "RUNTIME_CODE_PATCH"
+  ],
+  "patches": [
+    {
+      "type": "RUNTIME_OVERLAY",
+      "file": "patches/widescreen.overlay",
+      "apply": "RUNTIME",
+      "provenance": "Source-only EU revision-0 widescreen research; payload is not distributable from this example",
+      "expectedOriginalWords": {}
+    }
+  ],
+  "hardcoreCompatible": false
+}

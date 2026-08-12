@@ -43,6 +43,9 @@
         <meta-data
             android:name="android.game_mode_config"
             android:resource="@xml/game_mode_config" />
+        <meta-data
+            android:name="me.magnum.melonds.SOURCE_REVISION"
+            android:value="${sourceRevision}" />
 
         <activity
             android:name=".ui.romlist.RomListActivity"

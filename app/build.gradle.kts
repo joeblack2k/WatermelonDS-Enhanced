@@ -1,6 +1,5 @@
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -9,6 +8,30 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+fun gitOutput(vararg arguments: String): String {
+    val process = ProcessBuilder(listOf("git") + arguments)
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+    check(process.waitFor() == 0) {
+        "Unable to determine source revision: git ${arguments.joinToString(" ")}"
+    }
+    return output
+}
+
+val acceptanceBuild = System.getenv("MELONDS_ACCEPTANCE_BUILD") == "true"
+val sourceRevision = runCatching { gitOutput("rev-parse", "--verify", "HEAD") }.getOrNull()
+if (acceptanceBuild) {
+    check(sourceRevision?.matches(Regex("[0-9a-f]{40}")) == true) {
+        "Acceptance build requires an exact 40-character superproject HEAD"
+    }
+    check(gitOutput("status", "--porcelain", "--untracked-files=all").isEmpty()) {
+        "Acceptance build requires a clean superproject worktree"
+    }
+}
+val embeddedSourceRevision = sourceRevision ?: "UNAVAILABLE"
 
 data class LibrashaderAbiTarget(
     val abi: String,
@@ -40,6 +63,7 @@ android {
         versionCode = AppConfig.versionCode
         versionName = AppConfig.versionName
         manifestPlaceholders["appName"] = "@string/app_name"
+        manifestPlaceholders["sourceRevision"] = embeddedSourceRevision
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86_64"))
@@ -129,6 +153,20 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
+}
+
+val bundledEnhancementAssets = layout.buildDirectory.dir("generated/bundledEnhancements").get().asFile
+tasks.register<Sync>("prepareBundledEnhancementAssets") {
+    from(rootProject.file("enhancements")) {
+        include("*/manifest.json")
+        eachFile { path = "enhancements/$path" }
+        includeEmptyDirs = false
+    }
+    into(bundledEnhancementAssets)
+}
+android.sourceSets["main"].assets.srcDir(bundledEnhancementAssets)
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn("prepareBundledEnhancementAssets")
 }
 
 androidComponents {
@@ -271,7 +309,7 @@ fun librashaderToolSearchDirs(): List<File> {
         file("/usr/bin"),
         file("/bin"),
     )
-    return (pathDirs + fallbackDirs).distinctBy { it.absolutePath }
+    return (fallbackDirs + pathDirs).distinctBy { it.absolutePath }
 }
 
 fun augmentedLibrashaderPath(): String {
@@ -303,6 +341,18 @@ fun resolveBuildTool(tool: String): String {
             "Android Studio may not inherit your shell PATH; install Rust with rustup or set ${tool.uppercase()} to the executable path."
     }
     return executable.absolutePath
+}
+
+fun resolveRustupTool(tool: String): String {
+    val rustup = resolveBuildTool("rustup")
+    val process = ProcessBuilder(rustup, "which", tool)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+    check(process.waitFor() == 0 && output.isNotBlank()) {
+        "Unable to resolve rustup tool ${tool}: ${output.ifBlank { "no path returned" }}"
+    }
+    return output
 }
 
 fun runBuildCommand(command: List<String>, workingDir: File? = null) {
@@ -462,8 +512,10 @@ val copyLibrashaderAbiArtifacts = librashaderAbiTargets.map { abiTarget ->
 
         workingDir = librashaderSourceDir.get().asFile
         commandLine(
-            resolveBuildTool("cargo"),
-            "+stable",
+            resolveBuildTool("rustup"),
+            "run",
+            "stable",
+            "cargo",
             "build",
             "--package",
             "librashader-capi",
@@ -478,6 +530,7 @@ val copyLibrashaderAbiArtifacts = librashaderAbiTargets.map { abiTarget ->
         environment("CC_${abiTarget.rustTarget.replace("-", "_")}", clang.absolutePath)
         environment("CXX_${abiTarget.rustTarget.replace("-", "_")}", clangCpp.absolutePath)
         environment("AR_${abiTarget.rustTarget.replace("-", "_")}", llvmAr.absolutePath)
+        environment("RUSTC", resolveRustupTool("rustc"))
         environment("CARGO_TARGET_${targetEnvKey}_LINKER", clang.absolutePath)
         environment("CARGO_TARGET_${targetEnvKey}_RUSTFLAGS", "-C link-arg=-Wl,-soname,liblibrashader.so")
         environment("PATH", augmentedLibrashaderPath())
@@ -546,6 +599,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":enhancements"))
     val gitHubImplementation by configurations
 
     implementation(projects.masterswitch)

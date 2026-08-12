@@ -6,6 +6,7 @@
 #include <sys/system_properties.h>
 #include <limits>
 #include <sstream>
+#include <unordered_set>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <filesystem>
@@ -25,6 +26,7 @@
 #include "GPU3D_Vulkan.h"
 #include "MelonDS.h"
 #include "MelonInstance.h"
+#include "RuntimeTransientInputAdapter.h"
 #include "NDS.h"
 #include "NDSCart.h"
 #include "VulkanContext.h"
@@ -1917,6 +1919,7 @@ void MelonInstance::start()
 
 void MelonInstance::reset()
 {
+    clearTransientInputState();
     nds->Reset();
     setBatteryLevels();
     setDateTime();
@@ -2412,6 +2415,13 @@ u32 MelonInstance::runFrame()
 
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogX, slot2AnalogX.load(std::memory_order_relaxed));
     nds->GBACartSlot.SetInput(GBACart::Input_AnalogY, slot2AnalogY.load(std::memory_order_relaxed));
+    MelonDSAndroid::applyRuntimeTransientInput(
+        nds->GBACartSlot,
+        runtimeFrameAxisXQ12.load(std::memory_order_relaxed),
+        runtimeFrameAxisYQ12.load(std::memory_order_relaxed),
+        runtimeFrameScalar.load(std::memory_order_relaxed),
+        runtimeFrameActionSequence.load(std::memory_order_relaxed),
+        runtimeFrameFlags.load(std::memory_order_relaxed));
 
     int screenWidth;
     int screenHeight;
@@ -2744,6 +2754,7 @@ void MelonInstance::handleVulkanRuntimeFailure(const char* reason)
 
 void MelonInstance::stop()
 {
+    clearTransientInputState();
     std::unique_ptr<RetroAchievements::RetroAchievementsManager> managerToDestroy;
     {
         std::lock_guard lock(retroAchievementsManagerLifetimeMutex);
@@ -2820,6 +2831,62 @@ void MelonInstance::setSlot2AnalogInput(float x, float y)
 {
     slot2AnalogX.store(std::clamp(x, -1.0f, 1.0f), std::memory_order_relaxed);
     slot2AnalogY.store(std::clamp(y, -1.0f, 1.0f), std::memory_order_relaxed);
+}
+
+void MelonInstance::clearTransientInputState()
+{
+    setSlot2AnalogInput(0.0f, 0.0f);
+    setRuntimeTransientInputFrame(0, 0, 0,
+        runtimeFrameActionSequence.load(std::memory_order_relaxed), 0);
+}
+
+void MelonInstance::setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+    u16 actionSequence, u16 flags)
+{
+    runtimeFrameAxisXQ12.store(std::clamp<s16>(axisXQ12, -4096, 4096), std::memory_order_relaxed);
+    runtimeFrameAxisYQ12.store(std::clamp<s16>(axisYQ12, -4096, 4096), std::memory_order_relaxed);
+    runtimeFrameScalar.store(scalar, std::memory_order_relaxed);
+    runtimeFrameActionSequence.store(actionSequence, std::memory_order_relaxed);
+    runtimeFrameFlags.store(flags, std::memory_order_relaxed);
+}
+
+bool MelonInstance::validateEnhancedRuntimeGuard(u32 address, u32 expectedWord) const
+{
+    return nds != nullptr && address % 4 == 0 &&
+        address >= 0x02000000 && address <= 0x023FFFFC &&
+        nds->ARM9Read32(address) == expectedWord;
+}
+
+bool MelonInstance::applyEnhancedRuntimeOverlay(
+    const std::vector<u32>& addresses,
+    const std::vector<u32>& expectedWords,
+    const std::vector<u32>& values)
+{
+    constexpr u32 MainRamStart = 0x02000000;
+    constexpr u32 MainRamEnd = 0x02400000;
+    constexpr std::size_t MaxOverlayWords = 4096;
+    if (nds == nullptr || addresses.empty() || addresses.size() > MaxOverlayWords ||
+        addresses.size() != expectedWords.size() || addresses.size() != values.size()) {
+        return false;
+    }
+    std::unordered_set<u32> seenAddresses;
+    seenAddresses.reserve(addresses.size());
+    for (std::size_t index = 0; index < addresses.size(); ++index) {
+        if (addresses[index] % 4 != 0 ||
+            addresses[index] < MainRamStart ||
+            addresses[index] > MainRamEnd - sizeof(u32) ||
+            !seenAddresses.insert(addresses[index]).second) {
+            return false;
+        }
+        const u32 currentWord = nds->ARM9Read32(addresses[index]);
+        if (currentWord != expectedWords[index] && currentWord != values[index]) {
+            return false;
+        }
+    }
+    for (std::size_t index = 0; index < addresses.size(); ++index) {
+        nds->ARM9Write32(addresses[index], values[index]);
+    }
+    return true;
 }
 
 int MelonInstance::readAudioOutput(s16* buffer, int length)
@@ -5064,6 +5131,7 @@ bool MelonInstance::saveState(Savestate* state, bool refreshScreenshot)
 
 bool MelonInstance::loadState(Savestate* state)
 {
+    clearTransientInputState();
     joinPendingFrameTail();
     {
         std::lock_guard lock(retroAchievementsManagerLifetimeMutex);

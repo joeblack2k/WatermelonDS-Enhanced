@@ -66,9 +66,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.magnum.enhancements.EnhancementRuntimeInput
 import kotlinx.coroutines.withTimeoutOrNull
 import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.R
@@ -132,6 +134,7 @@ import me.magnum.melonds.ui.emulator.model.ToastEvent
 import me.magnum.melonds.ui.emulator.model.RetroAchievementsLoadStage
 import me.magnum.melonds.ui.emulator.model.VulkanCompileProgress
 import me.magnum.melonds.ui.emulator.model.VulkanPresentationConfig
+import me.magnum.melonds.ui.emulator.model.useNative43Fallback
 import me.magnum.melonds.ui.emulator.render.ChoreographerFrameRenderer
 import me.magnum.melonds.ui.emulator.render.ChoreographerFrameRendererFactory
 import me.magnum.melonds.ui.emulator.render.ExternalPresentation
@@ -160,6 +163,7 @@ import kotlin.math.max
 class EmulatorActivity : AppCompatActivity() {
     companion object {
         const val KEY_ROM = "rom"
+        const val KEY_ENHANCEMENT_OVERRIDE = "enhancement_override"
         const val KEY_PATH = "PATH"
         const val KEY_URI = "uri"
         const val KEY_BOOT_FIRMWARE_CONSOLE = "boot_firmware_console"
@@ -176,9 +180,10 @@ class EmulatorActivity : AppCompatActivity() {
         private const val SHADER_PREWARM_MESSAGE_SETTLE_MS = 150L
         private const val LEDGER_EXPIRATION_DAY_MS = 24L * 60L * 60L * 1000L
 
-        fun getRomEmulatorActivityIntent(context: Context, rom: Rom): Intent {
+        fun getRomEmulatorActivityIntent(context: Context, rom: Rom, enhancementOverride: Set<String>? = null): Intent {
             return Intent(context, EmulatorActivity::class.java).apply {
                 putExtra(KEY_ROM, RomParcelable(rom))
+                enhancementOverride?.let { putExtra(KEY_ENHANCEMENT_OVERRIDE, it.toTypedArray()) }
             }
         }
 
@@ -427,6 +432,7 @@ class EmulatorActivity : AppCompatActivity() {
     )
 
     private val rewindSaveStateAdapter = RewindSaveStateAdapter {
+        if (::nativeInputListener.isInitialized) nativeInputListener.neutralizeTransientInputs()
         viewModel.rewindToState(it)
         closeRewindWindow()
     }
@@ -814,9 +820,12 @@ class EmulatorActivity : AppCompatActivity() {
         }
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.controllerConfiguration.collect {
-                    setupInputHandling(it)
-                    connectedControllerManager.setCurrentControllerConfiguration(it)
+                combine(
+                    viewModel.controllerConfiguration,
+                    viewModel.activeRuntimeInputProtocol,
+                ) { configuration, protocol -> configuration to protocol }.collect {
+                    setupInputHandling(it.first, it.second)
+                    connectedControllerManager.setCurrentControllerConfiguration(it.first)
                 }
             }
         }
@@ -1042,6 +1051,7 @@ class EmulatorActivity : AppCompatActivity() {
                                 if (isSaving) {
                                     viewModel.saveStateToSlot(slot)
                                 } else {
+                                    if (::nativeInputListener.isInitialized) nativeInputListener.neutralizeTransientInputs()
                                     viewModel.loadStateFromSlot(slot)
                                 }
                             }
@@ -1489,6 +1499,11 @@ class EmulatorActivity : AppCompatActivity() {
             return
         }
         updateDisplays()
+        connectedControllerManager.onControllerRemoved = {
+            if (::nativeInputListener.isInitialized) {
+                nativeInputListener.neutralizeTransientInputs()
+            }
+        }
         getSystemService<DisplayManager>()?.registerDisplayListener(displayListener, null)
         getSystemService<InputManager>()?.registerInputDeviceListener(connectedControllerManager, null)
         connectedControllerManager.startTrackingControllers()
@@ -2080,12 +2095,13 @@ class EmulatorActivity : AppCompatActivity() {
         }
 
         val (surfaceWidth, surfaceHeight) = binding.surfaceMain.getCurrentSurfaceSize()
+        val native43Fallback = useNative43Fallback(viewModel.enhancementPresentationState())
         val (resolvedTopScreenRect, resolvedBottomScreenRect) = resolveVulkanScreenRects(
             topScreenRect = topScreenRect,
             bottomScreenRect = bottomScreenRect,
             surfaceWidth = if (surfaceWidth > 0) surfaceWidth else binding.surfaceMain.width,
             surfaceHeight = if (surfaceHeight > 0) surfaceHeight else binding.surfaceMain.height,
-            fallbackWhenEmpty = hybridTopScreenRect == null && hybridBottomScreenRect == null,
+            fallbackWhenEmpty = native43Fallback,
         )
 
         return VulkanPresentationConfig(
@@ -2095,10 +2111,10 @@ class EmulatorActivity : AppCompatActivity() {
             bottomAlpha = bottomAlpha,
             topOnTop = topOnTop,
             bottomOnTop = bottomOnTop,
-            hybridTopScreenRect = hybridTopScreenRect?.takeIf { it.width > 0 && it.height > 0 },
-            hybridBottomScreenRect = hybridBottomScreenRect?.takeIf { it.width > 0 && it.height > 0 },
-            hybridAlpha = hybridAlpha,
-            hybridOnTop = hybridOnTop,
+            hybridTopScreenRect = hybridTopScreenRect?.takeIf { !native43Fallback && it.width > 0 && it.height > 0 },
+            hybridBottomScreenRect = hybridBottomScreenRect?.takeIf { !native43Fallback && it.width > 0 && it.height > 0 },
+            hybridAlpha = hybridAlpha.takeIf { !native43Fallback } ?: 0f,
+            hybridOnTop = hybridOnTop && !native43Fallback,
             backgroundMode = currentMainScreenBackground.mode,
             videoFiltering = rendererConfiguration.videoFiltering,
             retroShaderEnabled = rendererConfiguration.videoFiltering == VideoFiltering.RETROARCH,
@@ -2194,8 +2210,11 @@ class EmulatorActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration) {
-        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler)
+    private fun setupInputHandling(controllerConfiguration: ControllerConfiguration, runtimeInput: EnhancementRuntimeInput? = null) {
+        if (::nativeInputListener.isInitialized) {
+            nativeInputListener.neutralizeTransientInputs()
+        }
+        nativeInputListener = InputProcessor(controllerConfiguration, melonTouchHandler, frontendInputHandler, runtimeInput)
     }
 
     private fun handleBackPressed() {
@@ -3953,6 +3972,7 @@ class EmulatorActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        nativeInputListener.neutralizeTransientInputs()
         cancelStartupPresentationRefreshes()
         stopShaderDiagnosticsPolling()
         frontendInputHandler.clearFastForwardHold()
@@ -3975,6 +3995,8 @@ class EmulatorActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        nativeInputListener.neutralizeTransientInputs()
+        connectedControllerManager.onControllerRemoved = null
         cancelStartupPresentationRefreshes()
         getSystemService<DisplayManager>()?.unregisterDisplayListener(displayListener)
         getSystemService<InputManager>()?.unregisterInputDeviceListener(connectedControllerManager)

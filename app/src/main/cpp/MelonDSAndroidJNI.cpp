@@ -17,6 +17,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <cctype>
+#include <sstream>
 #include <time.h>
 #include <MelonDS.h>
 #include <MelonDSAudio.h>
@@ -874,49 +876,26 @@ Java_me_magnum_melonds_MelonEmulator_setupCheats(JNIEnv* env, jobject thiz, jobj
             continue;
         }
         std::string codeString = codeStringPtr;
-        // Since each part of a cheat code has 8 characters (4 bytes), we can add 1 to the length (to ensure that each part has a matching space separator) and divide by 9
-        // (part length + space separator) to calculate the total number of parts in the cheat
-        size_t codeLength = (codeString.size() + 1) / 9;
-
         bool isBad = false;
-        std::size_t start = 0;
-        std::size_t end = 0;
-
         MelonDSAndroid::Cheat internalCheat;
-        internalCheat.code.reserve(codeLength);
-
-        // Split code string into sections separated by a space
-        while ((end = codeString.find(' ', start)) != std::string::npos) {
-            if (end != start) {
-                char* endPointer;
-                std::string sectionString = codeString.substr(start, end - start);
-                // Each code section must be 4 bytes (8 hex characters)
-                if (sectionString.size() != 8) {
-                    isBad = true;
-                    break;
-                }
-
-                unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
-                if (*endPointer == 0) {
-                    internalCheat.code.push_back((u32) section);
-                } else {
-                    isBad = true;
-                    break;
-                }
-            }
-            start = end + 1;
-        }
-
-        if (!isBad && end != start) {
+        std::istringstream words(codeString);
+        std::string sectionString;
+        while (words >> sectionString) {
             char* endPointer;
-            std::string sectionString = codeString.substr(start, end - start);
             if (sectionString.size() != 8) {
                 isBad = true;
-            } else {
-                unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
+                break;
+            }
+            unsigned long section = strtoul(sectionString.c_str(), &endPointer, 16);
+            if (*endPointer == 0) {
                 internalCheat.code.push_back((u32) section);
+            } else {
+                isBad = true;
+                break;
             }
         }
+        if (internalCheat.code.empty() || internalCheat.code.size() % 2 != 0)
+            isBad = true;
 
         env->ReleaseStringUTFChars(code, codeStringPtr);
         env->DeleteLocalRef(code);
@@ -2383,6 +2362,12 @@ Java_me_magnum_melonds_MelonEmulator_stopEmulation(JNIEnv* env, jobject thiz)
 }
 
 JNIEXPORT void JNICALL
+Java_me_magnum_melonds_MelonEmulator_clearTransientInputState(JNIEnv* env, jobject thiz)
+{
+    MelonDSAndroid::clearTransientInputState();
+}
+
+JNIEXPORT void JNICALL
 Java_me_magnum_melonds_MelonEmulator_onScreenTouch(JNIEnv* env, jobject thiz, jint x, jint y)
 {
     MelonDSAndroid::touchScreen(x, y);
@@ -2416,6 +2401,59 @@ JNIEXPORT void JNICALL
 Java_me_magnum_melonds_MelonEmulator_setSlot2AnalogInput(JNIEnv* env, jobject thiz, jfloat x, jfloat y)
 {
     MelonDSAndroid::setSlot2AnalogInput(x, y);
+}
+
+JNIEXPORT void JNICALL
+Java_me_magnum_melonds_MelonEmulator_setRuntimeTransientInputFrame(
+    JNIEnv* env, jobject thiz, jshort axisXQ12, jshort axisYQ12, jshort scalar,
+    jshort actionSequence, jshort flags)
+{
+    MelonDSAndroid::setRuntimeTransientInputFrame(
+        axisXQ12, axisYQ12, static_cast<u16>(scalar),
+        static_cast<u16>(actionSequence), static_cast<u16>(flags));
+}
+
+JNIEXPORT jboolean JNICALL
+Java_me_magnum_melonds_MelonEmulator_validateEnhancedRuntimeGuard(
+    JNIEnv* env, jobject thiz, jint address, jint expectedWord)
+{
+    (void)env;
+    (void)thiz;
+    return MelonDSAndroid::validateEnhancedRuntimeGuard(
+        static_cast<u32>(address),
+        static_cast<u32>(expectedWord));
+}
+
+JNIEXPORT jboolean JNICALL
+Java_me_magnum_melonds_MelonEmulator_applyEnhancedRuntimeOverlay(
+    JNIEnv* env, jobject thiz, jintArray addresses, jintArray expectedWords, jintArray values)
+{
+    (void)thiz;
+    if (addresses == nullptr || expectedWords == nullptr || values == nullptr) {
+        return JNI_FALSE;
+    }
+    const jsize count = env->GetArrayLength(addresses);
+    if (count <= 0 || count > 4096 ||
+        env->GetArrayLength(expectedWords) != count || env->GetArrayLength(values) != count) {
+        return JNI_FALSE;
+    }
+    std::vector<jint> addressValues(count);
+    std::vector<jint> expectedValues(count);
+    std::vector<jint> overlayValues(count);
+    env->GetIntArrayRegion(addresses, 0, count, addressValues.data());
+    env->GetIntArrayRegion(expectedWords, 0, count, expectedValues.data());
+    env->GetIntArrayRegion(values, 0, count, overlayValues.data());
+    std::vector<u32> nativeAddresses(count);
+    std::vector<u32> nativeExpected(count);
+    std::vector<u32> nativeValues(count);
+    for (jsize index = 0; index < count; ++index) {
+        nativeAddresses[index] = static_cast<u32>(addressValues[index]);
+        nativeExpected[index] = static_cast<u32>(expectedValues[index]);
+        nativeValues[index] = static_cast<u32>(overlayValues[index]);
+    }
+    return MelonDSAndroid::applyEnhancedRuntimeOverlay(nativeAddresses, nativeExpected, nativeValues)
+        ? JNI_TRUE
+        : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL

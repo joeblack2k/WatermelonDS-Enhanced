@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 3,
+  "id": "sm64ds.eu.60fps",
+  "name": "SM64DS EU 60 FPS",
+  "version": "0.1.0",
+  "author": "WatermelonDS Enhanced contributors",
+  "status": "SOURCE_ONLY",
+  "distributionStatus": "SOURCE_ONLY",
+  "match": {
+    "gameCode": "ASMP",
+    "revision": 0,
+    "raHashes": [
+      "ba3c4052e00c5cc31df5d5534c39de1b"
+    ]
+  },
+  "capabilities": ["RUNTIME_CODE_PATCH", "GAME_TIMING_PATCH"],
+  "patches": [
+    {
+      "type": "ACTION_REPLAY",
+      "file": "patches/60fps-v10.ards",
+      "apply": "RUNTIME",
+      "provenance": "Canonical v10 payload from the supplied enhancement-profiles.json; exact ASMP revision-0 and RA hash only; source-only until gameplay acceptance",
+      "expectedOriginalWords": {
+        "0x020BEDD4": "0xE92D4010",
+        "0x0208EE44": "0x00000001",
+        "0x020BF3C0": "0xE5964098",
+        "0x020BF3F4": "0xEBFD460D",
+        "0x020BF3FC": "0xE5864098",
+        "0x020D4D88": "0xE92D4030",
+        "0x020E4F10": "0xE0850000",
+        "0x020E4FDC": "0xE2850D1B"
+      },
+      "sha256": "6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7"
+    }
+  ],
+  "conflictsWith": ["sm64ds.eu.widescreen"],
+  "hardcoreCompatible": false,
+  "verification": {
+    "gameplayBehavior": "UNVERIFIED",
+    "cadence": "UNVERIFIED",
+    "gameplayPhysics": "UNVERIFIED",
+    "timers": "UNVERIFIED",
+    "animation": "UNVERIFIED",
+    "particles": "UNVERIFIED",
+    "audio": "UNVERIFIED",
+    "saveState": "UNVERIFIED",
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
+  }
+}

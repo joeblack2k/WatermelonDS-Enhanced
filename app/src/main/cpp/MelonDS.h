@@ -150,6 +150,13 @@ namespace MelonDSAndroid {
     extern void pressKey(u32 key);
     extern void releaseKey(u32 key);
     extern void setSlot2AnalogInput(float x, float y);
+    extern void setRuntimeTransientInputFrame(s16 axisXQ12, s16 axisYQ12, u16 scalar,
+        u16 actionSequence, u16 flags);
+    extern bool validateEnhancedRuntimeGuard(u32 address, u32 expectedWord);
+    extern bool applyEnhancedRuntimeOverlay(
+        const std::vector<u32>& addresses,
+        const std::vector<u32>& expectedWords,
+        const std::vector<u32>& values);
     extern void start();
     extern u32 loop();
     extern Frame* getPresentationFrame(std::optional<std::chrono::time_point<std::chrono::steady_clock>> deadline);
@@ -251,6 +258,7 @@ namespace MelonDSAndroid {
     extern RewindWindow getRewindWindow();
     extern bool takeScreenshot();
     extern void stop();
+    extern void clearTransientInputState();
     extern void cleanup();
 }
 
