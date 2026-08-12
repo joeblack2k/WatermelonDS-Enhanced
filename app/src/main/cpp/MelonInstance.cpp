@@ -6,6 +6,7 @@
 #include <sys/system_properties.h>
 #include <limits>
 #include <sstream>
+#include <unordered_set>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <filesystem>
@@ -2868,10 +2869,13 @@ bool MelonInstance::applyEnhancedRuntimeOverlay(
         addresses.size() != expectedWords.size() || addresses.size() != values.size()) {
         return false;
     }
+    std::unordered_set<u32> seenAddresses;
+    seenAddresses.reserve(addresses.size());
     for (std::size_t index = 0; index < addresses.size(); ++index) {
         if (addresses[index] % 4 != 0 ||
             addresses[index] < MainRamStart ||
-            addresses[index] > MainRamEnd - sizeof(u32)) {
+            addresses[index] > MainRamEnd - sizeof(u32) ||
+            !seenAddresses.insert(addresses[index]).second) {
             return false;
         }
         const u32 currentWord = nds->ARM9Read32(addresses[index]);
