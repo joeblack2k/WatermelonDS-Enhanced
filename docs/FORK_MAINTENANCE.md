@@ -9,8 +9,8 @@ payloads.
 - `origin`: `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`
 - `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
 - `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
-- `origin/PR head`: `codex/watermelon-enhanced-pr@c68734fe226b70d60b20908b2af191293f084c7a`
-- `local candidate tree`: `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus the complete uncommitted candidate source diff, including the two untracked source files
+- `origin/PR head`: `codex/watermelon-enhanced-pr@34ea454454bcf62c31f83b451078791153cec646`
+- `published candidate`: `34ea454454bcf62c31f83b451078791153cec646`
 - `PR`: `#1`, open and draft
 - `melonDS-android-lib` submodule URL:
   `https://github.com/joeblack2k/melonDS-android-lib.git`
@@ -76,10 +76,8 @@ The other initialized and clean submodules are pinned at:
 - `app/src/main/cpp/faad2`: `2653c918d788c5dc83826c97aaa4de4dd8931a8b`
 - `app/src/main/cpp/oboe`: `a81bb9f87d4105b84b682685d3bfbb5beca371d1`
 
-The M3 batch does not commit or push. APKs, build outputs, ROMs, credentials,
-and captures remain outside Git. The complete uncommitted candidate source
-diff, including the two untracked source files above, is part of the evidence
-scope.
+The published candidate contains source and documentation only. APKs, build
+outputs, ROMs, credentials, captures, and private evidence remain outside Git.
 
 The current lint evidence rerun was `2026-08-12 12:38:21 +0200` using
 `./gradlew lintGitHubProdDebug --no-daemon`: 635 errors, 574 warnings, and

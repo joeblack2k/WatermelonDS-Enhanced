@@ -1,19 +1,13 @@
 # WatermelonDS Enhanced acceptance audit
 
-Audit scope: bounded FIX-FIRST evidence correction, performed from candidate
-tree `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus these uncommitted documentation
-batch, after M1/M2. The complete uncommitted candidate source diff includes
-the two untracked source files
-`app/src/main/java/me/magnum/melonds/ui/romlist/EnhancementRomListState.kt` and
-`app/src/test/java/me/magnum/melonds/ui/emulator/TransientInputLifecycleContractTest.kt`.
-Remote PR head is `c68734fe226b70d60b20908b2af191293f084c7a`
+Audit scope: bounded FIX-FIRST evidence correction, performed against published
+candidate `34ea454454bcf62c31f83b451078791153cec646`, after M1/M2. This
+documentation-only correction does not change code, manifests, payloads, or
+private evidence. Remote PR head is
+`34ea454454bcf62c31f83b451078791153cec646`
 and base is `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`.
-This is an evidence record only. No payload was repaired, and no commit, push,
-or review was performed. The enhancement lint batch covers eight
-enhancement-owned findings: seven `MissingTranslation` findings received the
-scoped resource-level correction requested for this batch in
-`app/src/main/res/values/strings.xml`. That resource is part of this batch.
-One enhancement-owned `PluralsCandidate` warning remains for
+This is an evidence record only. No payload was repaired, and no release or
+runtime acceptance is claimed. One enhancement-owned `PluralsCandidate` warning remains for
 `enhancement_import_success` and is recorded below rather than suppressed.
 The current lint rerun was performed at `2026-08-12 12:38:21 +0200`; external
 log SHA-256: `11e3ba3fa7b1ca291a34c816d8a2204619d91ea1e74ec3064ee19756ebdf3900`.
@@ -37,21 +31,20 @@ acceptance.
 
 | Item | Evidence |
 | --- | --- |
-| origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; PR head resolves to `c68734fe226b70d60b20908b2af191293f084c7a` |
+| origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; PR head resolves to `34ea454454bcf62c31f83b451078791153cec646` |
 | upstream | `https://github.com/SapphireRhodonite/melonDS-android.git`; the maintained base branch is `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9` |
 | audit base | `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) |
-| local candidate tree | `b9385a48402dbabc453c8b290ab5c73151b2b5a8` plus the complete uncommitted candidate source diff, including the two untracked source files |
+| published candidate | `34ea454454bcf62c31f83b451078791153cec646` |
 | merge-base with upstream/master | `7e31d08a3e0e3801c0aca393832238395ac63983` |
 | gitlink | `melonDS-android-lib` at `e4022d7e7ada535ff5ea9d087db389cc46e8da62` |
-| PR status | PR #1 is OPEN and DRAFT; base `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9`; remote head `codex/watermelon-enhanced-pr` at `c68734fe226b70d60b20908b2af191293f084c7a` |
+| PR status | PR #1 is OPEN and DRAFT; base `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9`; remote head `codex/watermelon-enhanced-pr` at `34ea454454bcf62c31f83b451078791153cec646` |
 
 ### Evidence scope at current candidate
 
-The requested audit candidate is local `b9385a48402dbabc453c8b290ab5c73151b2b5a8`; the PR
-base is `Fet_OfflineChevos` at
+The requested audit candidate is published commit
+`34ea454454bcf62c31f83b451078791153cec646`; the PR base is
 `1e0a463d785448ab47f78a12e2a88241df288cf9`. This correction updates only the
-three permitted documentation files plus the scoped resource annotation batch
-in `app/src/main/res/values/strings.xml`:
+three permitted documentation files:
 
 ```text
 docs/ENHANCED_ACCEPTANCE.md
@@ -59,9 +52,7 @@ README.md
 docs/FORK_MAINTENANCE.md
 ```
 
-The evidence below is audited against the candidate tree plus the complete
-uncommitted source diff, including the two untracked source files, not against
-an older snapshot or the base.
+The evidence below is audited against the published candidate.
 
 ## Payload inventory
 
@@ -87,11 +78,11 @@ The manifest status remains `SOURCE_ONLY`.
 
 | Claim | Status | Evidence path / commit / hash | Boundary |
 | --- | --- | --- | --- |
-| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
-| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
-| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
-| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
-| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
+| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published candidate `34ea454454bcf62c31f83b451078791153cec646` | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
+| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `34ea454454bcf62c31f83b451078791153cec646` | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
+| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published candidate `34ea454454bcf62c31f83b451078791153cec646` | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
+| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `34ea454454bcf62c31f83b451078791153cec646` | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
+| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `34ea454454bcf62c31f83b451078791153cec646` | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
 | Audio | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no audio capture or accepted runtime log | No repository artifact proves audio continuity or correct pitch/rate at the intended cadence. Manifest: `UNVERIFIED`. |
 | Save-state | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no save/load session evidence | No repository artifact proves save-state behavior while the source-only patch is active. Manifest: `UNVERIFIED`. |
 | Correct game speed | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no real gameplay run or speed measurement | A cadence counter, emulator overclock, or payload hash cannot prove 1x game speed. No new runtime claim is made. |
@@ -111,8 +102,8 @@ payload or establish any gameplay claim.
 
 ## Repository command matrix and evidence
 
-All commands below were run from this checkout at HEAD
-`b9385a48402dbabc453c8b290ab5c73151b2b5a8`. They are repository evidence only;
+All commands below were run against published candidate
+`34ea454454bcf62c31f83b451078791153cec646`. They are repository evidence only;
 none is runtime, distribution, or device acceptance.
 
 | Area | Command | Result |
@@ -181,8 +172,8 @@ NOT ACCEPTED**:
 
 | R3 item | Evidence | Result |
 | --- | --- | --- |
-| Frontend key-down edge | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` at local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8`; the `KEYCODE_BUTTON_THUMBR` path sends recenter only for `ACTION_DOWN` with `repeatCount == 0`. | **PROVEN** |
-| Sequence transport / Slot-2 offset `0x06` | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` and `enhancements/src/main/kotlin/me/magnum/enhancements/CameraInputProtocol.kt` at local HEAD `b9385a48402dbabc453c8b290ab5c73151b2b5a8` structurally transport `recenterSequence`; `enhancements/sm64ds.eu.right-stick-camera/README.md` records the required Slot-2 offset `0x06` read/compare/update structure. | **STRUCTURALLY PROVEN** |
+| Frontend key-down edge | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` at published candidate `34ea454454bcf62c31f83b451078791153cec646`; the `KEYCODE_BUTTON_THUMBR` path sends recenter only for `ACTION_DOWN` with `repeatCount == 0`. | **PROVEN** |
+| Sequence transport / Slot-2 offset `0x06` | `app/src/main/java/me/magnum/melonds/ui/emulator/input/InputProcessor.kt` and `enhancements/src/main/kotlin/me/magnum/enhancements/CameraInputProtocol.kt` at published candidate `34ea454454bcf62c31f83b451078791153cec646` structurally transport `recenterSequence`; `enhancements/sm64ds.eu.right-stick-camera/README.md` records the required Slot-2 offset `0x06` read/compare/update structure. | **STRUCTURALLY PROVEN** |
 | Game-side persistent consumer | `enhancements/sm64ds.eu.right-stick-camera/README.md` states that the existing evidence does not prove the persistent addon-state slot or the required payload words; the checked-in assembly remains only a rebuild input. | **ABSENT / NOT PROVEN** |
 | Physical result | Existing audit evidence records no accepted AYN Thor/device result, including camera or persistent-state behavior. | **UNAVAILABLE** |
 
@@ -357,7 +348,7 @@ in `enabledEnhancements`. This proves normal UI per-ROM activation/config
 selection for the EU ROM; it does not by itself prove guard activation,
 widescreen presentation, or the wrong-guard 4:3 fallback.
 
-The copied Thor save artifacts are confined to the untracked
+The copied Thor save artifacts are confined to the private
 `/tmp/m1-evidence-20260811/thor-saves` evidence directory and were not used to alter
 device data. The device's existing EU save remained unchanged; its recorded
 SHA-256 is
