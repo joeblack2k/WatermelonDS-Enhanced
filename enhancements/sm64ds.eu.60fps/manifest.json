@@ -43,7 +43,7 @@
     "particles": "UNVERIFIED",
     "audio": "UNVERIFIED",
     "saveState": "UNVERIFIED",
-    "guardedPayload": "VERIFIED",
-    "payloadInput": "VERIFIED"
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
   }
 }

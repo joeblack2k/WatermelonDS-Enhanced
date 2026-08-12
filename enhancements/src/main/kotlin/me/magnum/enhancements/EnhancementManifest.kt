@@ -212,6 +212,12 @@ object EnhancementManifestParser {
             "Duplicate enhancement patch file"
         }
         require(manifest.patches.size <= MAX_PATCHES) { "Too many enhancement patches" }
+        if (manifest.schemaVersion >= 3) {
+            require(
+                manifest.verification.guardedPayload != EnhancementClaim.VERIFIED ||
+                    manifest.verification.payloadInput == EnhancementPayloadInput.VERIFIED,
+            ) { "Verified guarded payloads need verified payload input" }
+        }
         manifest.patches.forEach {
             require(it.sha256 == null || it.sha256.matches(Regex("[0-9a-fA-F]{64}"))) {
                 "Invalid patch SHA-256"
@@ -230,6 +236,19 @@ object EnhancementManifestParser {
                 }
             }
             if (it.type == EnhancementPatchType.RUNTIME_OVERLAY || it.type == EnhancementPatchType.ACTION_REPLAY) {
+                if (manifest.schemaVersion >= 3) {
+                    require(EnhancementCapability.RUNTIME_CODE_PATCH in manifest.capabilities) {
+                        "Runtime patches need RUNTIME_CODE_PATCH capability"
+                    }
+                    if (manifest.verification.guardedPayload == EnhancementClaim.VERIFIED) {
+                        require(it.expectedOriginalWords.isNotEmpty()) {
+                            "Verified runtime patches need original-word guards"
+                        }
+                        require(!it.sha256.isNullOrBlank()) {
+                            "Verified runtime patches need a payload SHA-256"
+                        }
+                    }
+                }
                 require(it.provenance.isNotBlank()) { "Runtime patches need provenance" }
                 require(it.expectedOriginalWords.keys.all { address -> address.matches(Regex("0x[0-9a-fA-F]{8}")) }) {
                     "Invalid guarded patch address"

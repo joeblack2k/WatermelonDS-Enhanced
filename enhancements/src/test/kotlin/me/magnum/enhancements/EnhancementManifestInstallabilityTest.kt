@@ -59,6 +59,15 @@ class EnhancementManifestInstallabilityTest {
 
         val camera = requireNotNull(manifests["sm64ds.eu.right-stick-camera"])
         assertEquals(
+            setOf(
+                EnhancementCapability.CONTROLLER_AXIS_OWNER,
+                EnhancementCapability.RUNTIME_INPUT_PROTOCOL,
+                EnhancementCapability.RUNTIME_CODE_PATCH,
+                EnhancementCapability.SLOT2_ANALOG,
+            ),
+            camera.capabilities,
+        )
+        assertEquals(
             EnhancementLifecycleEvent.entries.toSet(),
             camera.runtimeLifecycle,
         )
@@ -73,7 +82,13 @@ class EnhancementManifestInstallabilityTest {
         assertEquals(setOf(EnhancementCapability.RUNTIME_CODE_PATCH), sixty.capabilities)
         assertEquals(setOf("sm64ds.eu.60fps"), widescreen.conflictsWith)
         assertEquals(setOf("sm64ds.eu.widescreen"), sixty.conflictsWith)
-        assertEquals(EnhancementDistributionStatus.SOURCE_ONLY, sixty.distributionStatus)
         assertEquals(EnhancementClaim.UNVERIFIED, sixty.verification.cadence)
+        manifests.values.forEach { manifest ->
+            assertEquals(EnhancementStatus.SOURCE_ONLY, manifest.status)
+            assertEquals(EnhancementDistributionStatus.SOURCE_ONLY, manifest.distributionStatus)
+            assertEquals(EnhancementPayloadInput.MISSING, manifest.verification.payloadInput)
+            assertEquals(EnhancementClaim.UNVERIFIED, manifest.verification.guardedPayload)
+            assertTrue(!manifest.isInstallable())
+        }
     }
 }

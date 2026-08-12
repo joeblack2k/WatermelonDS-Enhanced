@@ -11,7 +11,7 @@
     "revision": 0,
     "raHashes": ["ba3c4052e00c5cc31df5d5534c39de1b"]
   },
-  "capabilities": ["LAYER_AWARE_PRESENTATION"],
+  "capabilities": ["LAYER_AWARE_PRESENTATION", "RUNTIME_CODE_PATCH"],
   "patches": [
     {
       "type": "ACTION_REPLAY",
@@ -30,7 +30,7 @@
   "conflictsWith": ["sm64ds.eu.60fps"],
   "hardcoreCompatible": false,
   "verification": {
-    "guardedPayload": "VERIFIED",
-    "payloadInput": "VERIFIED"
+    "guardedPayload": "UNVERIFIED",
+    "payloadInput": "MISSING"
   }
 }

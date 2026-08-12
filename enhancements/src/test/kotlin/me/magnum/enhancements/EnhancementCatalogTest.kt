@@ -33,6 +33,7 @@ class EnhancementCatalogTest {
             """{"schemaVersion":3,"id":"hashed.addon","name":"Hashed","version":"1",
                 "distributionStatus":"SOURCE_ONLY",
                 "match":{"gameCode":"ASMP","headerChecksum":"12345678"},
+                "capabilities":["RUNTIME_CODE_PATCH"],
                 "patches":[{"type":"ACTION_REPLAY","file":"patch.ards","provenance":"test","sha256":"$hash"}]}""",
         )
         try {

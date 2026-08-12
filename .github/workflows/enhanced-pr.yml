@@ -38,6 +38,9 @@ jobs:
       - name: Test ROM identity
         run: python3 -B enhancements/tools/test_rom_identity.py
 
+      - name: Test widescreen manifest and payload
+        run: python3 -B enhancements/sm64ds.eu.widescreen/tools/test_manifest.py
+
       - name: Run tests
         run: ./gradlew :enhancements:test :app:testGitHubProdReleaseUnitTest --no-daemon
 

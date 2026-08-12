@@ -13,7 +13,8 @@
   },
   "capabilities": [
     "NATIVE_EMULATOR_CAPABILITY",
-    "LAYER_AWARE_PRESENTATION"
+    "LAYER_AWARE_PRESENTATION",
+    "RUNTIME_CODE_PATCH"
   ],
   "patches": [
     {

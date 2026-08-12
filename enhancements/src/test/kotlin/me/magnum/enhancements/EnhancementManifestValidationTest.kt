@@ -125,6 +125,42 @@ class EnhancementManifestValidationTest {
     }
 
     @Test
+    fun schemaV3RuntimePatchesNeedCapabilityAndVerifiedEvidence() {
+        val runtime = manifest(EnhancementPatchType.ACTION_REPLAY, EnhancementPatchApply.RUNTIME)
+            .copy(schemaVersion = 3, distributionStatus = EnhancementDistributionStatus.SOURCE_ONLY)
+        try {
+            EnhancementManifestParser.validate(runtime)
+            fail("Expected missing runtime capability to be rejected")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("RUNTIME_CODE_PATCH"))
+        }
+
+        val verified = runtime.copy(
+            capabilities = setOf(EnhancementCapability.RUNTIME_CODE_PATCH),
+            verification = EnhancementVerification(
+                guardedPayload = EnhancementClaim.VERIFIED,
+                payloadInput = EnhancementPayloadInput.MISSING,
+            ),
+        )
+        try {
+            EnhancementManifestParser.validate(verified)
+            fail("Expected verified payload input to be rejected")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message.orEmpty().contains("payload input"))
+        }
+    }
+
+    @Test
+    fun schemaV1AndV2KeepLegacyRuntimePatchBehavior() {
+        listOf(1, 2).forEach { version ->
+            EnhancementManifestParser.validate(
+                manifest(EnhancementPatchType.ACTION_REPLAY, EnhancementPatchApply.RUNTIME)
+                    .copy(schemaVersion = version),
+            )
+        }
+    }
+
+    @Test
     fun rejectsInversePatchApplyPairs() {
         listOf(
             EnhancementPatchType.ACTION_REPLAY to EnhancementPatchApply.TEMPORARY_COPY,

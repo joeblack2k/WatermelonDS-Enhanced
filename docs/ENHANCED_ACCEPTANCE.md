@@ -70,6 +70,14 @@ the corresponding manifest values.
 The four payloads total 1,034 lines. The 60fps and camera manifests remain
 runtime-unaccepted; matching a hash proves identity, not gameplay correctness.
 
+All three SM64DS manifests report the same installability boundary:
+
+| Manifest | `status` | `distributionStatus` | `payloadInput` | `guardedPayload` |
+| --- | --- | --- | --- | --- |
+| `sm64ds.eu.right-stick-camera` | `SOURCE_ONLY` | `SOURCE_ONLY` | `MISSING` | `UNVERIFIED` |
+| `sm64ds.eu.widescreen` | `SOURCE_ONLY` | `SOURCE_ONLY` | `MISSING` | `UNVERIFIED` |
+| `sm64ds.eu.60fps` | `SOURCE_ONLY` | `SOURCE_ONLY` | `MISSING` | `UNVERIFIED` |
+
 ## 60fps-v10 claim audit
 
 This is a repository audit of the supplied v10 artifact, not gameplay or
@@ -87,19 +95,18 @@ The manifest status remains `SOURCE_ONLY`.
 | Audio | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no audio capture or accepted runtime log | No repository artifact proves audio continuity or correct pitch/rate at the intended cadence. Manifest: `UNVERIFIED`. |
 | Save-state | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no save/load session evidence | No repository artifact proves save-state behavior while the source-only patch is active. Manifest: `UNVERIFIED`. |
 | Correct game speed | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no real gameplay run or speed measurement | A cadence counter, emulator overclock, or payload hash cannot prove 1x game speed. No new runtime claim is made. |
-| Payload input integrity | `repository-verified` | `enhancements/sm64ds.eu.60fps/manifest.json`; `enhancements/sm64ds.eu.60fps/patches/60fps-v10.ards`; SHA-256 `6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7` | Repository identity and hash binding only. Manifest: `payloadInput: VERIFIED`. |
-| Guarded payload integrity | `repository-verified` | `enhancements/sm64ds.eu.60fps/manifest.json`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py` | Declared expected words and bounded guard structure are verified from repository artifacts; no raw gameplay input or runtime application is proven. Manifest: `guardedPayload: VERIFIED`. |
+| Payload input integrity | `unavailable` | `enhancements/sm64ds.eu.60fps/manifest.json`; `enhancements/sm64ds.eu.60fps/patches/60fps-v10.ards`; SHA-256 `6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7` | Repository identity and hash binding do not supply the required legal revision-matched ARM9/overlay/raw gameplay input. Manifest: `payloadInput: MISSING`. |
+| Guarded payload integrity | `unavailable` | `enhancements/sm64ds.eu.60fps/manifest.json`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py` | The declared expected words and bounded guard structure are present, but required source input is unavailable and no guarded payload verification was completed. Manifest: `guardedPayload: UNVERIFIED`. |
 
 The seven gameplay claims represented by the manifest (`cadence`,
 `gameplayPhysics`, `timers`, `animation`, `particles`, `audio`, and
-`saveState`) remain exactly `UNVERIFIED`. Separately, the manifest records
-`payloadInput: VERIFIED` and `guardedPayload: VERIFIED`: the checked-in
-60fps-v10 payload has SHA-256
-`6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7`, and its
-declared identity/guard structure is internally bound. That integrity result
-does not supply the missing legal revision-matched ARM9/overlay/raw gameplay
-input, and does not turn the source-only package into a runtime-verified
-payload or establish any gameplay claim.
+`saveState`) remain exactly `UNVERIFIED`. The checked-in 60fps-v10 payload has
+SHA-256 `6b7134f07745400b1978b07450c0e45d0e3352d28a80010b8dbee0ece20f05b7`,
+but the repository does not supply the missing legal revision-matched
+ARM9/overlay/raw gameplay input. The manifest therefore remains
+`payloadInput: MISSING` and `guardedPayload: UNVERIFIED`; this does not turn the
+source-only package into a runtime-verified payload or establish any gameplay
+claim.
 
 ## Repository command matrix and evidence
 
