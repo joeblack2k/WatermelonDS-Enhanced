@@ -1,13 +1,12 @@
 # WatermelonDS Enhanced acceptance audit
 
-Audit scope: bounded FIX-FIRST evidence correction, performed against published
-candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`, after M1/M2. The
-code-bearing parent is historical commit
+Audit scope: bounded FIX-FIRST evidence correction, performed against the
+published branch `codex/watermelon-enhanced-pr`, after M1/M2. The live PR head
+is authoritative via GitHub. The code-bearing parent is historical commit
 `34ea454454bcf62c31f83b451078791153cec646`. This documentation-only correction
 does not change code, manifests, payloads, or
-private evidence. Remote PR head is
-`fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`
-and base is `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`.
+private evidence. The base is
+`Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`.
 This is an evidence record only. No payload was repaired, and no release or
 runtime acceptance is claimed. One enhancement-owned `PluralsCandidate` warning remains for
 `enhancement_import_success` and is recorded below rather than suppressed.
@@ -33,18 +32,18 @@ acceptance.
 
 | Item | Evidence |
 | --- | --- |
-| origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; PR head resolves to `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` |
+| origin | `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`; live PR head for `codex/watermelon-enhanced-pr` is authoritative via GitHub |
 | upstream | `https://github.com/SapphireRhodonite/melonDS-android.git`; the maintained base branch is `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9` |
 | audit base | `1e0a463d785448ab47f78a12e2a88241df288cf9` (`Fet_OfflineChevos`) |
-| published candidate | `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` |
+| published branch | `codex/watermelon-enhanced-pr`; live PR head is authoritative via GitHub |
 | merge-base with upstream/master | `7e31d08a3e0e3801c0aca393832238395ac63983` |
 | gitlink | `melonDS-android-lib` at `e4022d7e7ada535ff5ea9d087db389cc46e8da62` |
-| PR status | PR #1 is OPEN and DRAFT; base `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9`; remote head `codex/watermelon-enhanced-pr` at `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` |
+| PR status | PR #1 is OPEN and DRAFT; base `Fet_OfflineChevos` at `1e0a463d785448ab47f78a12e2a88241df288cf9`; live head is authoritative via GitHub |
 
 ### Evidence scope at current candidate
 
-The requested audit candidate is published commit
-`fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`; the PR base is
+The requested audit target is the published branch
+`codex/watermelon-enhanced-pr`; the PR base is
 `1e0a463d785448ab47f78a12e2a88241df288cf9`. This correction updates only the
 three permitted documentation files:
 
@@ -80,11 +79,11 @@ The manifest status remains `SOURCE_ONLY`.
 
 | Claim | Status | Evidence path / commit / hash | Boundary |
 | --- | --- | --- | --- |
-| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
-| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
-| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
-| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
-| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published candidate `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b` | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
+| Cadence | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/README.md`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published branch | Tooling and the bounded payload structure identify a cadence region, but no legal ARM9/overlay input or real run proves timing. Manifest: `UNVERIFIED`. |
+| Gameplay physics | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published branch | Source/runtime material describes intended timestep hooks only; movement and physics were not observed. Manifest: `UNVERIFIED`. |
+| Timers | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/player_timestep.s`; `enhancements/sm64ds.eu.60fps/tools/verify_patch.py`; published branch | Structural timer branches are not proof of correct in-game timer behavior. Manifest: `UNVERIFIED`. |
+| Animation | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/animation_timestep.s`; `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published branch | Source-only animation logic is present, but pose continuity and visible animation were not tested. Manifest: `UNVERIFIED`. |
+| Particles | `historical bounded evidence` | `enhancements/sm64ds.eu.60fps/runtime/world_timestep.s`; published branch | A bounded particle hook is an implementation input, not evidence that particle lifetimes/rendering remain correct. Manifest: `UNVERIFIED`. |
 | Audio | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no audio capture or accepted runtime log | No repository artifact proves audio continuity or correct pitch/rate at the intended cadence. Manifest: `UNVERIFIED`. |
 | Save-state | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no save/load session evidence | No repository artifact proves save-state behavior while the source-only patch is active. Manifest: `UNVERIFIED`. |
 | Correct game speed | `unavailable` | `enhancements/sm64ds.eu.60fps/README.md`; no real gameplay run or speed measurement | A cadence counter, emulator overclock, or payload hash cannot prove 1x game speed. No new runtime claim is made. |
@@ -104,8 +103,8 @@ payload or establish any gameplay claim.
 
 ## Repository command matrix and evidence
 
-All commands below were run against published candidate
-`fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`. They are repository evidence only;
+All commands below were run against the published branch. The live PR head is
+authoritative via GitHub. They are repository evidence only;
 none is runtime, distribution, or device acceptance.
 
 | Area | Command | Result |

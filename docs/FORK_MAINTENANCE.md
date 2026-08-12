@@ -9,8 +9,8 @@ payloads.
 - `origin`: `https://github.com/joeblack2k/WatermelonDS-Enhanced.git`
 - `upstream`: `https://github.com/SapphireRhodonite/melonDS-android.git`
 - `base`: `Fet_OfflineChevos@1e0a463d785448ab47f78a12e2a88241df288cf9`
-- `origin/PR head`: `codex/watermelon-enhanced-pr@fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`
-- `published candidate`: `fc3bccb7957f6004c4c51a1e8daaa75d4f41664b`
+- `published branch`: `codex/watermelon-enhanced-pr`
+- `PR head`: live GitHub state is authoritative
 - `PR`: `#1`, open and draft
 - `melonDS-android-lib` submodule URL:
   `https://github.com/joeblack2k/melonDS-android-lib.git`
