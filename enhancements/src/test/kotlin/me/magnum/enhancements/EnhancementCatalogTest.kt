@@ -191,6 +191,67 @@ class EnhancementCatalogTest {
     }
 
     @Test
+    fun sourceOnlyBundledManifestsMatchRomButAreNotRuntimeCandidates() {
+        val root = listOf(File("enhancements"), File("."))
+            .map { File(it, "sm64ds.eu.60fps") }
+            .first { it.isDirectory }
+            .parentFile
+        val catalog = EnhancementCatalog.loadFromRoots(listOf(root))
+        val identity = EnhancementRomIdentity(
+            "ASMP",
+            null,
+            "",
+            revision = 0,
+            raHash = "ba3c4052e00c5cc31df5d5534c39de1b",
+        )
+
+        assertEquals(
+            listOf("sm64ds.eu.60fps", "sm64ds.eu.right-stick-camera", "sm64ds.eu.widescreen"),
+            catalog.matching(identity).map { it.id },
+        )
+        assertTrue(catalog.matching(identity).all { !it.isInstallable() })
+        assertTrue(catalog.installableMatching(identity).isEmpty())
+    }
+
+    @Test
+    fun sourceOnlySelectionCannotCreateRuntimeSession() {
+        val root = listOf(File("enhancements"), File("."))
+            .map { File(it, "sm64ds.eu.60fps") }
+            .first { it.isDirectory }
+            .parentFile
+        val catalog = EnhancementCatalog.loadFromRoots(listOf(root))
+        val identity = EnhancementRomIdentity("ASMP", null, "", raHash = "ba3c4052e00c5cc31df5d5534c39de1b")
+
+        listOf("sm64ds.eu.60fps", "sm64ds.eu.right-stick-camera", "sm64ds.eu.widescreen").forEach { id ->
+            try {
+                catalog.createSession(identity, setOf(id))
+                throw AssertionError("Expected source-only add-on selection to fail: $id")
+            } catch (error: IllegalArgumentException) {
+                assertTrue(error.message.orEmpty().contains("does not match"))
+            }
+        }
+    }
+
+    @Test
+    fun emptySelectionCreatesUnmodifiedBaseSession() {
+        val catalog = EnhancementCatalog.loadFromRoots(listOf(File("enhancements")))
+        val session = catalog.createSession(
+            EnhancementRomIdentity(
+                "ASMP",
+                null,
+                "",
+                revision = 0,
+                raHash = "ba3c4052e00c5cc31df5d5534c39de1b",
+            ),
+            emptySet(),
+        )
+
+        assertTrue(session.addOns.isEmpty())
+        assertTrue(session.patchPlan.runtimePatches.isEmpty())
+        assertTrue(session.patchPlan.temporaryCopyPatches.isEmpty())
+    }
+
+    @Test
     fun revisionMismatchFailsClosedEvenWhenGameCodeMatches() {
         val manifest = EnhancementManifest(
             schemaVersion = 3,

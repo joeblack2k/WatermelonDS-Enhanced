@@ -125,6 +125,34 @@ class EnhancementCatalogLoaderTest {
     }
 
     @Test
+    fun malformedSourceOnlyInstalledPackageDoesNotHideBundledDescriptor() {
+        val root = Files.createTempDirectory("loader-source-only-shadow").toFile()
+        try {
+            val installed = File(root, "sm64ds.eu.widescreen").also { it.mkdirs() }
+            File(installed, "manifest.json").writeText(
+                """{"schemaVersion":3,"id":"sm64ds.eu.widescreen","name":"Invalid",
+                    "version":"99","distributionStatus":"SOURCE_ONLY","match":{"gameCode":"ASMP"},
+                    "patches":[{"type":"ACTION_REPLAY","file":"missing.ards","sha256":"${"00".repeat(32)}"}]}"""
+                    .replace(Regex("\\s+"), " "),
+            )
+            val bundled = EnhancementManifestParser.parse(
+                """{"schemaVersion":3,"id":"sm64ds.eu.widescreen","name":"Bundled",
+                    "version":"2","distributionStatus":"SOURCE_ONLY","match":{"gameCode":"ASMP",
+                    "raHashes":["ba3c4052e00c5cc31df5d5534c39de1b"]}}"""
+                    .replace(Regex("\\s+"), " "),
+            )
+
+            val merged = EnhancementCatalogLoader.loadInstalled(listOf(root))
+                .mergeBundled(EnhancementCatalog(listOf(bundled)))
+
+            assertEquals("Bundled", merged.find("sm64ds.eu.widescreen")?.name)
+            assertEquals("2", merged.find("sm64ds.eu.widescreen")?.version)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun validHashedInstalledPackageOverridesBundledSameIdDescriptor() {
         val root = Files.createTempDirectory("loader-hash").toFile()
         try {
