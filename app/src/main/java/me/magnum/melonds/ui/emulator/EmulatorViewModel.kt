@@ -178,6 +178,7 @@ import me.magnum.melonds.ui.emulator.component.RaSubmissionContextValidator
 import me.magnum.melonds.ui.emulator.component.RaSessionStopGate
 import me.magnum.melonds.ui.emulator.component.RaRuntimeAuthenticationPolicy
 import me.magnum.melonds.ui.emulator.component.EmulatorSessionFallbackCoordinator
+import me.magnum.melonds.ui.emulator.component.decideEnhancedLaunchFallback
 import me.magnum.melonds.ui.emulator.component.orchestrateEnhancedLaunch
 import me.magnum.melonds.impl.retroachievements.offline.RetroAchievementsImageCacheWarmer
 import me.magnum.melonds.impl.retroachievements.offline.SmartSyncSkipReason
@@ -773,34 +774,54 @@ class EmulatorViewModel @Inject constructor(
             activeRomConfig.value = rom
             val romInfo = getRomInfo(rom)
             val enabledEnhancements = enhancementOverride ?: rom.config.enabledEnhancements
-            activeEnhancementSession = if (enabledEnhancements.isEmpty()) {
-                null
-            } else {
-                val catalog = enhancementCatalogLoader.load()
-                val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
-                identity?.let {
-                    val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
-                    val reconciled = enabledEnhancements.intersect(matchingIds)
-                    if (enhancementOverride == null && reconciled != rom.config.enabledEnhancements) {
-                        val config = rom.config.copy(enabledEnhancements = reconciled)
-                        romsRepository.updateRomConfig(rom, config)
-                        currentRom = rom.copy(config = config)
-                        activeRomConfig.value = currentRom
-                    }
-                    if (reconciled.isEmpty()) {
-                        null
-                    } else {
-                        catalog.createSession(
-                            identity = it,
-                            enabledIds = reconciled,
-                        )
-                    }
-                } ?: run {
-                    require(enabledEnhancements.isEmpty()) {
-                        "Enhanced add-ons require a readable ROM header"
-                    }
+            var reconciledConfig: RomConfig? = null
+            activeEnhancementSession = try {
+                if (enabledEnhancements.isEmpty()) {
                     null
+                } else {
+                    val catalog = enhancementCatalogLoader.load()
+                    val identity = enhancementRomIdentityResolver.resolve(rom, catalog)
+                    identity?.let {
+                        val matchingIds = catalog.installableMatching(it).mapTo(mutableSetOf()) { manifest -> manifest.id }
+                        val reconciled = enabledEnhancements.intersect(matchingIds)
+                        val session = if (reconciled.isEmpty()) {
+                            null
+                        } else {
+                            catalog.createSession(
+                                identity = it,
+                                enabledIds = reconciled,
+                            )
+                        }
+                        if (enhancementOverride == null && reconciled != rom.config.enabledEnhancements) {
+                            reconciledConfig = rom.config.copy(enabledEnhancements = reconciled)
+                        }
+                        session
+                    } ?: error("Enhanced add-ons require a readable ROM header")
                 }
+            } catch (exception: Exception) {
+                if (exception is CancellationException) {
+                    throw exception
+                }
+                val fallback = try {
+                    decideEnhancedLaunchFallback(exception, allowEnhancedFallback)
+                } catch (terminalFailure: Throwable) {
+                    throw terminalFailure
+                }
+                Log.w("EmulatorViewModel", "Failed to resolve enhanced ROM preflight", exception)
+                resetEmulatorState(EmulatorState.LoadingRom())
+                sessionFallbackCoordinator.launchOnFreshSession {
+                    launchRom(
+                        rom,
+                        enhancementOverride = fallback.enhancementOverride,
+                        allowEnhancedFallback = fallback.allowEnhancedFallback,
+                    )
+                }
+                return@coroutineScope
+            }
+            reconciledConfig?.let { config ->
+                romsRepository.updateRomConfig(rom, config)
+                currentRom = rom.copy(config = config)
+                activeRomConfig.value = currentRom
             }
             _activeRuntimeInputProtocol.value = null
             try {

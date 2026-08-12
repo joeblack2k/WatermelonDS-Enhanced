@@ -52,6 +52,28 @@ class EmulatorSessionFallbackCoordinatorTest {
     }
 
     @Test
+    fun preflightFailureFallsBackBeforeMaterializationOrActivationAndDoesNotPersistEarly() {
+        val source = File("src/main/java/me/magnum/melonds/ui/emulator/EmulatorViewModel.kt").readText()
+        val launch = source.substringAfter("private suspend fun launchRom(")
+            .substringBefore("private fun isRetroAchievementsEnabledForLaunch")
+        val preflightStart = launch.indexOf("activeEnhancementSession = try")
+        val preflight = launch.substring(preflightStart).substringBefore("reconciledConfig?.let")
+
+        assertTrue(preflight.contains("enhancementCatalogLoader.load()"))
+        assertTrue(preflight.contains("enhancementRomIdentityResolver.resolve(rom, catalog)"))
+        assertTrue(preflight.contains("catalog.createSession"))
+        assertTrue(preflight.contains("decideEnhancedLaunchFallback(exception, allowEnhancedFallback)"))
+        assertTrue(preflight.contains("enhancementOverride = fallback.enhancementOverride"))
+        assertTrue(preflight.contains("allowEnhancedFallback = fallback.allowEnhancedFallback"))
+        assertFalse(preflight.contains("romsRepository.updateRomConfig"))
+        assertTrue(preflight.contains("catch (exception: Exception)"))
+        assertTrue(preflight.contains("if (exception is CancellationException)"))
+        assertFalse(preflight.contains("launchRom(rom, enhancementOverride = emptySet()"))
+        assertFalse(preflight.contains("activateEnhancedAddOns"))
+        assertFalse(preflight.contains("enhancedOverlayLoader.load"))
+    }
+
+    @Test
     fun enhancedLaunchOrdersLoadCapabilityActivationCompositionExposureAndPolicy() = runTest {
         val events = mutableListOf<String>()
         val result = orchestrateEnhancedLaunch(
@@ -200,6 +222,30 @@ class EmulatorSessionFallbackCoordinatorTest {
     }
 
     @Test
+    fun catalogSessionFailureFallsBackToOriginalOnceAndSecondFailureIsTerminal() = runTest {
+        val catalogSessionFailure = IllegalStateException("catalog/session failure")
+        val launches = mutableListOf<LaunchContract>()
+        var allowEnhancedFallback = true
+
+        repeat(2) {
+            try {
+                val decision = decideEnhancedLaunchFallback(
+                    catalogSessionFailure,
+                    allowEnhancedFallback,
+                )
+                assertEquals(emptySet<String>(), decision.enhancementOverride)
+                assertFalse(decision.allowEnhancedFallback)
+                launches += originalLaunchContract()
+                allowEnhancedFallback = decision.allowEnhancedFallback
+            } catch (failure: IllegalStateException) {
+                assertEquals(catalogSessionFailure, failure)
+            }
+        }
+
+        assertEquals(1, launches.size)
+    }
+
+    @Test
     fun unsupportedCapabilityPreparesAsFailureAndFallsBackToOriginalLaunchContract() = runTest {
         val launches = mutableListOf<LaunchContract>()
         var fallbackCount = 0
@@ -247,5 +293,13 @@ class EmulatorSessionFallbackCoordinatorTest {
         val cheats: List<String>,
         val retroAchievements: String,
         val presentation: String,
+    )
+
+    private fun originalLaunchContract() = LaunchContract(
+        originalUri = "content://rom/original",
+        slot2 = "configured-slot-2",
+        cheats = listOf("base-cheat"),
+        retroAchievements = "casual",
+        presentation = "native",
     )
 }
