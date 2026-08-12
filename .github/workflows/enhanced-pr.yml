@@ -1,0 +1,45 @@
+name: Enhanced PR
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Check submodules
+        run: git submodule status --recursive
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          cache: gradle
+
+      - name: Check diff
+        run: |
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base_sha" ]; then
+            git fetch --no-tags origin Fet_OfflineChevos
+            base_sha="$(git merge-base HEAD origin/Fet_OfflineChevos)"
+          fi
+          git diff --check "$base_sha"...HEAD
+
+      - name: Test ROM identity
+        run: python3 -B enhancements/tools/test_rom_identity.py
+
+      - name: Run tests
+        run: ./gradlew :enhancements:test :app:testGitHubProdReleaseUnitTest --no-daemon
+
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleGitHubProdDebug --no-daemon
